@@ -52,11 +52,51 @@
         <span>Reset Original</span>
       </button>
 
-      <!-- Copy to Clipboard -->
-      <button id="btn-copy-clipboard" class="studio-btn btn-secondary" title="Copy image directly to macOS/Windows clipboard">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        <span>Copy Image (คัดลอก)</span>
-      </button>
+      <!-- Copy to Clipboard (Split Dropdown: Full / Resized) -->
+      <div class="dropdown-wrapper" id="copy-dropdown-wrapper">
+        <div class="split-btn-group">
+          <button id="btn-copy-clipboard" class="studio-btn btn-secondary btn-split-main" title="Copy image directly to macOS/Windows clipboard">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span id="btn-copy-label">Copy (คัดลอก)</span>
+          </button>
+          <button id="btn-copy-toggle-menu" class="studio-btn btn-secondary btn-split-arrow" title="Choose Copy Size (Full 100% / Resized 50% / Compact 30%)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+        </div>
+
+        <!-- Dropdown Menu -->
+        <div id="copy-menu" class="dropdown-menu hidden">
+          <div class="dropdown-header">Copy Resolution (เลือกขนาดคัดลอก)</div>
+          <button class="menu-item active" data-scale="1.0" id="opt-copy-full">
+            <div class="menu-item-left">
+              <span class="menu-title">📋 100% Full Resolution</span>
+              <span class="menu-desc">Original high-DPI quality</span>
+            </div>
+            <span class="menu-badge" id="badge-full-resolution">100%</span>
+          </button>
+          <button class="menu-item" data-scale="0.5" id="opt-copy-50">
+            <div class="menu-item-left">
+              <span class="menu-title">⚡ 50% Optimized Scale</span>
+              <span class="menu-desc">Ideal for Slack, Teams, Jira &amp; Chat</span>
+            </div>
+            <span class="menu-badge">50%</span>
+          </button>
+          <button class="menu-item" data-scale="0.3" id="opt-copy-30">
+            <div class="menu-item-left">
+              <span class="menu-title">📱 30% Compact Scale</span>
+              <span class="menu-desc">Super lightweight &amp; fast sharing</span>
+            </div>
+            <span class="menu-badge">30%</span>
+          </button>
+          <button class="menu-item" data-scale="custom" id="opt-copy-custom">
+            <div class="menu-item-left">
+              <span class="menu-title">⚙️ Custom Width...</span>
+              <span class="menu-desc">Specify exact width (e.g. 1080px, 1200px)</span>
+            </div>
+            <span class="menu-badge">Custom</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Download PNG -->
       <button id="btn-download-png" class="studio-btn btn-primary" title="Download PNG file">

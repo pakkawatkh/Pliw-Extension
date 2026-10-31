@@ -56,7 +56,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnCropToggle = document.getElementById('btn-crop-toggle');
   const btnResetCrop = document.getElementById('btn-reset-crop');
   const btnCopyClipboard = document.getElementById('btn-copy-clipboard');
+  const btnCopyLabel = document.getElementById('btn-copy-label');
+  const btnCopyToggleMenu = document.getElementById('btn-copy-toggle-menu');
+  const copyMenu = document.getElementById('copy-menu');
+  const badgeFullResolution = document.getElementById('badge-full-resolution');
   const btnDownloadPng = document.getElementById('btn-download-png');
+
+  let currentCopyScale = 1.0;
+  let currentCustomWidth = null;
 
   const cropActionBar = document.getElementById('crop-action-bar');
   const cropDimsVal = document.getElementById('crop-dims');
@@ -118,6 +125,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     ctx.drawImage(sourceImg, 0, 0);
 
     badgeDims.textContent = `${sourceImg.width} × ${sourceImg.height} px`;
+    if (badgeFullResolution) {
+      badgeFullResolution.textContent = `${sourceImg.width}px`;
+    }
   }
 
   // 3. Zoom Handlers
@@ -226,12 +236,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 5. Copy to Clipboard
-  btnCopyClipboard.addEventListener('click', async () => {
+  // 5. Copy to Clipboard (Full Resolution & Resized Options)
+  async function copyImageToClipboard(scaleFactor = 1.0, customWidth = null) {
     try {
-      mainCanvas.toBlob(async (blob) => {
+      let targetWidth, targetHeight;
+
+      if (customWidth) {
+        targetWidth = Math.max(100, Math.round(customWidth));
+        targetHeight = Math.round((mainCanvas.height / mainCanvas.width) * targetWidth);
+      } else {
+        targetWidth = Math.round(mainCanvas.width * scaleFactor);
+        targetHeight = Math.round(mainCanvas.height * scaleFactor);
+      }
+
+      let sourceCanvas = mainCanvas;
+      if (targetWidth !== mainCanvas.width || targetHeight !== mainCanvas.height) {
+        // High-quality downsampling canvas
+        const scaledCanvas = document.createElement('canvas');
+        scaledCanvas.width = targetWidth;
+        scaledCanvas.height = targetHeight;
+        const sCtx = scaledCanvas.getContext('2d');
+        sCtx.imageSmoothingEnabled = true;
+        sCtx.imageSmoothingQuality = 'high';
+        sCtx.drawImage(mainCanvas, 0, 0, targetWidth, targetHeight);
+        sourceCanvas = scaledCanvas;
+      }
+
+      sourceCanvas.toBlob(async (blob) => {
         if (!blob) {
-          alert('Failed to generate image blob');
+          showToast('❌ Failed to create image blob', 3000);
           return;
         }
 
@@ -239,11 +272,77 @@ document.addEventListener('DOMContentLoaded', async () => {
           new ClipboardItem({ 'image/png': blob })
         ]);
 
-        showToast('✅ Copied to clipboard! Ready to paste (⌘V)');
+        const sizeKb = Math.round(blob.size / 1024);
+        const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+        const label = scaleFactor === 1.0 && !customWidth ? 'Full Resolution' : `Resized ${targetWidth}px`;
+        showToast(`✅ Copied ${label} (${targetWidth}×${targetHeight}px • ${sizeStr}) to clipboard! Ready to paste (⌘V)`);
       }, 'image/png');
     } catch (err) {
       console.error('Clipboard copy failed:', err);
       showToast('❌ Copy failed: Permission denied by browser', 4000);
+    }
+  }
+
+  // Main copy button: copies using currently selected scale
+  btnCopyClipboard.addEventListener('click', () => {
+    copyImageToClipboard(currentCopyScale, currentCustomWidth);
+  });
+
+  // Toggle resolution dropdown menu
+  btnCopyToggleMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyMenu.classList.toggle('hidden');
+  });
+
+  // Close dropdown menu when clicking anywhere else
+  document.addEventListener('click', (e) => {
+    if (!copyMenu.contains(e.target) && e.target !== btnCopyToggleMenu) {
+      copyMenu.classList.add('hidden');
+    }
+  });
+
+  // Dropdown options
+  const copyMenuItems = copyMenu.querySelectorAll('.menu-item');
+
+  function setActiveMenuItem(activeEl, labelText, scale, customW = null) {
+    copyMenuItems.forEach(item => item.classList.remove('active'));
+    activeEl.classList.add('active');
+    currentCopyScale = scale;
+    currentCustomWidth = customW;
+    btnCopyLabel.textContent = labelText;
+    copyMenu.classList.add('hidden');
+  }
+
+  document.getElementById('opt-copy-full').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setActiveMenuItem(e.currentTarget, 'Copy (Full)', 1.0, null);
+    copyImageToClipboard(1.0, null);
+  });
+
+  document.getElementById('opt-copy-50').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setActiveMenuItem(e.currentTarget, 'Copy (50%)', 0.5, null);
+    copyImageToClipboard(0.5, null);
+  });
+
+  document.getElementById('opt-copy-30').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setActiveMenuItem(e.currentTarget, 'Copy (30%)', 0.3, null);
+    copyImageToClipboard(0.3, null);
+  });
+
+  document.getElementById('opt-copy-custom').addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyMenu.classList.add('hidden');
+    const input = prompt('Enter target width in pixels (e.g. 1080, 1200, 800):', '1080');
+    if (input) {
+      const parsedW = parseInt(input, 10);
+      if (!isNaN(parsedW) && parsedW > 50) {
+        setActiveMenuItem(e.currentTarget, `Copy (${parsedW}px)`, null, parsedW);
+        copyImageToClipboard(null, parsedW);
+      } else {
+        alert('Please enter a valid width greater than 50px.');
+      }
     }
   });
 

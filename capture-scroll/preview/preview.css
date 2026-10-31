@@ -213,6 +213,122 @@ body {
   transform: translateY(-1px);
 }
 
+/* Split Button & Dropdown Menu */
+.dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.split-btn-group {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-split-main {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+.btn-split-arrow {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  padding: 8px 10px !important;
+  box-shadow: none !important;
+  border-left: 1px solid var(--border-color) !important;
+}
+
+.btn-split-arrow:hover, .btn-split-main:hover {
+  background: #f1f5f9;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  min-width: 290px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  z-index: 500;
+  overflow: hidden;
+  padding: 6px;
+  animation: dropFade 0.15s ease-out;
+}
+
+@keyframes dropFade {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 12px 6px;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+
+.menu-item:hover {
+  background: #f8fafc;
+}
+
+.menu-item.active {
+  background: #f0f9ff;
+}
+
+.menu-item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.menu-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.menu-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.menu-item.active .menu-badge {
+  background: #bae6fd;
+  color: #0284c7;
+}
+
 .hidden {
   display: none !important;
 }
