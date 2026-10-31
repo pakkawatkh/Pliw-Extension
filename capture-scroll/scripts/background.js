@@ -29,6 +29,51 @@ async function saveScreenshot(id, data) {
   });
 }
 
+async function deleteScreenshot(id) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  } catch (err) {}
+}
+
+async function cleanupOldScreenshots() {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.openCursor();
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    req.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor) {
+        if (!cursor.value.timestamp || cursor.value.timestamp < oneHourAgo) {
+          cursor.delete();
+        }
+        cursor.continue();
+      }
+    };
+  } catch (err) {}
+}
+
+// Map tracking preview tab ID to capture ID for instant auto-destruction on close
+const previewTabMap = new Map(); // tabId -> captureId
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (previewTabMap.has(tabId)) {
+    const captureId = previewTabMap.get(tabId);
+    previewTabMap.delete(tabId);
+    deleteScreenshot(captureId).catch(() => {});
+  }
+});
+
+// Run garbage cleanup on extension start
+cleanupOldScreenshots();
+
 // 2. Rate-limiting helper to strictly respect Chromium's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota
 let lastCaptureTimestamp = 0;
 const MIN_CAPTURE_INTERVAL_MS = 650; // Chromium limit is 2 calls/sec (500ms). 650ms guarantees 100% safety.
@@ -211,7 +256,10 @@ async function performFullPageCapture(tabId) {
 
     // Open Preview Studio in new tab
     const previewUrl = chrome.runtime.getURL(`preview/preview.html?id=${captureId}`);
-    await chrome.tabs.create({ url: previewUrl });
+    const previewTab = await chrome.tabs.create({ url: previewUrl });
+    if (previewTab && previewTab.id) {
+      previewTabMap.set(previewTab.id, captureId);
+    }
 
   } catch (err) {
     console.error('Full page capture stopped/failed:', err);
@@ -245,7 +293,10 @@ async function performVisibleCapture(tabId) {
     chrome.runtime.sendMessage({ action: 'CAPTURE_COMPLETE' }).catch(() => {});
 
     const previewUrl = chrome.runtime.getURL(`preview/preview.html?id=${captureId}`);
-    await chrome.tabs.create({ url: previewUrl });
+    const previewTab = await chrome.tabs.create({ url: previewUrl });
+    if (previewTab && previewTab.id) {
+      previewTabMap.set(previewTab.id, captureId);
+    }
   } catch (err) {
     console.error('Visible capture failed:', err);
     chrome.runtime.sendMessage({

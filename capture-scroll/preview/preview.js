@@ -18,6 +18,24 @@ function getScreenshotFromDB(id) {
   });
 }
 
+function deleteScreenshotFromDB(id) {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      };
+      req.onerror = () => resolve();
+    } catch (e) {
+      resolve();
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const captureId = urlParams.get('id');
@@ -248,5 +266,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       showToast('💾 Screenshot downloaded');
     }, 'image/png');
+  });
+
+  // 7. Auto-cleanup: destroy temporary screenshot from IndexedDB when tab is closed
+  window.addEventListener('beforeunload', () => {
+    if (captureId) {
+      deleteScreenshotFromDB(captureId);
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (captureId) {
+      deleteScreenshotFromDB(captureId);
+    }
   });
 });
