@@ -140,96 +140,166 @@ async function performFullPageCapture(tabId) {
       throw new Error('Unable to read page dimensions.');
     }
 
-    const { viewportWidth, viewportHeight, scrollHeight, dpr, totalSteps, title } = metrics;
-    const slices = [];
+    const { viewportWidth, viewportHeight, dpr, title } = metrics;
+    let scrollHeight = metrics.scrollHeight;
+    const maxSteps = Math.min(60, Math.max(1, Math.ceil(scrollHeight / viewportHeight) + 5));
+
+    const sliceDrawInstructions = [];
+    let canvasDrawnHeight = 0;
+    let currentActualY = 0;
 
     // Notify popup of progress start
     chrome.runtime.sendMessage({
       action: 'CAPTURE_PROGRESS',
       step: 0,
-      totalSteps,
-      status: `Starting capture (1/${totalSteps})...`
+      totalSteps: Math.ceil(scrollHeight / viewportHeight),
+      status: `Starting capture (1/${Math.ceil(scrollHeight / viewportHeight)})...`
     }).catch(() => {});
 
-    // Loop through each slice
-    for (let i = 0; i < totalSteps; i++) {
+    // --- STEP 0: Slice 0 (Initial top of the page with natural headers & sidebars) ---
+    const step0Res = await chrome.tabs.sendMessage(tabId, {
+      action: 'SCROLL_TO_POSITION',
+      y: 0,
+      stepIndex: 0
+    });
+
+    await chrome.tabs.sendMessage(tabId, { action: 'HIDE_BANNER' }).catch(() => {});
+    const firstDataUrl = await safeCaptureVisibleTab(null);
+    await chrome.tabs.sendMessage(tabId, { action: 'SHOW_BANNER' }).catch(() => {});
+
+    sliceDrawInstructions.push({
+      dataUrl: firstDataUrl,
+      sourceY: 0,
+      sourceHeight: viewportHeight,
+      destY: 0,
+      destHeight: viewportHeight
+    });
+    canvasDrawnHeight = viewportHeight;
+    currentActualY = (step0Res && typeof step0Res.actualY === 'number') ? step0Res.actualY : 0;
+    if (step0Res && step0Res.scrollHeight) {
+      scrollHeight = step0Res.scrollHeight;
+    }
+
+    chrome.runtime.sendMessage({
+      action: 'CAPTURE_PROGRESS',
+      step: 1,
+      totalSteps: Math.ceil(scrollHeight / viewportHeight),
+      status: `Captured section 1...`
+    }).catch(() => {});
+
+    // --- SUBSEQUENT STEPS: Delta-scroll through remaining content ---
+    let step = 1;
+    while (step < maxSteps) {
       if (shouldCancel) {
         throw new Error('Capture cancelled by user.');
       }
-      if (shouldStopEarly && slices.length > 0) {
-        console.log('[Tiffy Scroll] Stop early requested by user at step', i);
+      if (shouldStopEarly) {
+        console.log('[Tiffy Scroll] Stop early requested by user at step', step);
         break;
       }
 
-      let scrollY = i * viewportHeight;
-
-      // Handle the last slice: prevent overscrolling past bottom
-      if (scrollY + viewportHeight > scrollHeight) {
-        scrollY = Math.max(0, scrollHeight - viewportHeight);
+      // Check if we already reached or exceeded the document bottom
+      if (canvasDrawnHeight >= scrollHeight) {
+        break;
       }
 
-      // Update floating on-page banner
+      // Compute next target scroll position
+      let targetY = currentActualY + viewportHeight;
+      if (targetY + viewportHeight > scrollHeight) {
+        targetY = Math.max(0, scrollHeight - viewportHeight);
+      }
+
+      // If target cannot advance, stop
+      if (targetY <= currentActualY) {
+        break;
+      }
+
+      // Update floating banner
       await chrome.tabs.sendMessage(tabId, {
         action: 'UPDATE_FLOATING_BANNER',
-        step: i + 1,
-        totalSteps
+        step: step + 1,
+        totalSteps: Math.max(step + 1, Math.ceil(scrollHeight / viewportHeight))
       }).catch(() => {});
 
-      // 1. Tell page to scroll
-      await chrome.tabs.sendMessage(tabId, {
+      // Scroll and hide fixed/sticky elements
+      const scrollRes = await chrome.tabs.sendMessage(tabId, {
         action: 'SCROLL_TO_POSITION',
-        y: scrollY,
-        stepIndex: i
+        y: targetY,
+        stepIndex: step
       });
 
-      // Temporarily hide banner so it is not in the screenshot
-      await chrome.tabs.sendMessage(tabId, { action: 'HIDE_BANNER' }).catch(() => {});
+      const newActualY = (scrollRes && typeof scrollRes.actualY === 'number')
+        ? scrollRes.actualY
+        : targetY;
 
-      // 2. Capture viewport (using rate-limited safe capture)
-      const dataUrl = await safeCaptureVisibleTab(null);
+      if (scrollRes && scrollRes.scrollHeight && scrollRes.scrollHeight > scrollHeight) {
+        scrollHeight = scrollRes.scrollHeight;
+      }
 
-      // Restore banner visibility
-      await chrome.tabs.sendMessage(tabId, { action: 'SHOW_BANNER' }).catch(() => {});
-
-      slices.push({
-        y: scrollY,
-        dataUrl,
-        isLast: i === totalSteps - 1
-      });
-
-      // 3. Report progress
-      chrome.runtime.sendMessage({
-        action: 'CAPTURE_PROGRESS',
-        step: i + 1,
-        totalSteps,
-        status: `Captured section ${i + 1} of ${totalSteps}...`
-      }).catch(() => {});
-
-      if (shouldStopEarly) {
+      const deltaY = newActualY - currentActualY;
+      if (deltaY <= 0) {
+        // Could not scroll further
         break;
       }
+
+      // Capture visible tab
+      await chrome.tabs.sendMessage(tabId, { action: 'HIDE_BANNER' }).catch(() => {});
+      const sliceDataUrl = await safeCaptureVisibleTab(null);
+      await chrome.tabs.sendMessage(tabId, { action: 'SHOW_BANNER' }).catch(() => {});
+
+      // DELTA STITCHING:
+      // The new pixels revealed by scrolling down by deltaY are at the bottom of the viewport
+      const sourceY = Math.max(0, viewportHeight - deltaY);
+      const sourceHeight = Math.min(deltaY, viewportHeight);
+
+      sliceDrawInstructions.push({
+        dataUrl: sliceDataUrl,
+        sourceY: sourceY,
+        sourceHeight: sourceHeight,
+        destY: canvasDrawnHeight,
+        destHeight: sourceHeight
+      });
+
+      canvasDrawnHeight += sourceHeight;
+      currentActualY = newActualY;
+
+      chrome.runtime.sendMessage({
+        action: 'CAPTURE_PROGRESS',
+        step: step + 1,
+        totalSteps: Math.max(step + 1, Math.ceil(scrollHeight / viewportHeight)),
+        status: `Captured section ${step + 1}...`
+      }).catch(() => {});
+
+      // Check if we hit the bottom of the document
+      if (newActualY + viewportHeight >= scrollHeight) {
+        break;
+      }
+
+      step++;
     }
 
-    // 4. Stitch onto high-DPI OffscreenCanvas
-    const lastSlice = slices[slices.length - 1];
-    const totalLogicalHeight = shouldStopEarly
-      ? Math.min(lastSlice.y + viewportHeight, scrollHeight)
-      : scrollHeight;
-
+    // --- RENDER SEAMLESS HIGH-DPI CANVAS ---
     const physicalWidth = Math.round(viewportWidth * dpr);
-    const physicalHeight = Math.round(totalLogicalHeight * dpr);
+    const physicalHeight = Math.round(canvasDrawnHeight * dpr);
 
     const canvas = new OffscreenCanvas(physicalWidth, physicalHeight);
     const ctx = canvas.getContext('2d');
 
-    // Draw each slice at its physical coordinate
-    for (let i = 0; i < slices.length; i++) {
-      const slice = slices[i];
-      const blob = await (await fetch(slice.dataUrl)).blob();
+    for (const inst of sliceDrawInstructions) {
+      const blob = await (await fetch(inst.dataUrl)).blob();
       const bitmap = await createImageBitmap(blob);
 
-      const destY = Math.round(slice.y * dpr);
-      ctx.drawImage(bitmap, 0, destY);
+      const sX = 0;
+      const sY = Math.round(inst.sourceY * dpr);
+      const sW = physicalWidth;
+      const sH = Math.round(inst.sourceHeight * dpr);
+
+      const dX = 0;
+      const dY = Math.round(inst.destY * dpr);
+      const dW = physicalWidth;
+      const dH = Math.round(inst.destHeight * dpr);
+
+      ctx.drawImage(bitmap, sX, sY, sW, sH, dX, dY, dW, dH);
     }
 
     // Convert stitched canvas to Blob

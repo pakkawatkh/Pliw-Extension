@@ -151,74 +151,99 @@
     }
   }
 
-  // 3. Locate and hide fixed/sticky headers safely without breaking page styles
-  const hiddenFixedElementsMap = new Map(); // element -> original inline visibility
+  // 3. Locate and hide fixed/sticky elements (headers, chips, sidebars, floating widgets)
+  const hiddenFixedElementsMap = new Map(); // element -> { visibility, opacity }
 
-  function hideFixedHeaders() {
-    // Only capture and hide once per session; do not wipe or repeat
-    if (hiddenFixedElementsMap.size > 0) return;
+  function hideAllFixedAndStickyElements() {
+    const vh = window.innerHeight;
+    const all = document.querySelectorAll('*');
 
-    const candidates = document.querySelectorAll('header, nav, [role="banner"], ytd-masthead, #masthead, #header, div');
-    const vw = window.innerWidth;
-
-    for (const el of candidates) {
-      if (el.id === 'tiffy-floating-capture-bar') continue;
+    for (const el of all) {
+      if (!el || el.id === 'tiffy-floating-capture-bar') continue;
 
       try {
         const style = window.getComputedStyle(el);
-        const isFixedOrSticky = style.position === 'fixed' || style.position === 'sticky';
+        if (style.display === 'none' || style.visibility === 'hidden') continue;
 
-        if (isFixedOrSticky && style.display !== 'none' && style.visibility !== 'hidden') {
-          const rect = el.getBoundingClientRect();
-          // Only target top-level banners sticking near top edge of the viewport
-          if (rect.top <= 10 && rect.height > 0 && rect.height < (window.innerHeight * 0.4) && rect.width >= vw * 0.5) {
-            // Check if ancestor is already hidden to prevent redundant child hiding
-            let hasHiddenAncestor = false;
-            let parent = el.parentElement;
-            while (parent) {
-              if (hiddenFixedElementsMap.has(parent)) {
-                hasHiddenAncestor = true;
-                break;
-              }
-              parent = parent.parentElement;
-            }
+        const pos = style.position;
+        const rect = el.getBoundingClientRect();
 
-            if (!hasHiddenAncestor) {
-              hiddenFixedElementsMap.set(el, el.style.visibility || '');
-              el.setAttribute('data-tiffy-hidden', 'true');
-              el.style.setProperty('visibility', 'hidden', 'important');
+        let shouldHide = false;
+
+        // A. Fixed elements: on slices > 0, hide ANY fixed element (top headers, sidebars, floating badges, cookie banners)
+        // because it does not scroll and was already captured in slice 0.
+        if (pos === 'fixed') {
+          if (rect.width > 0 && rect.height > 0) {
+            shouldHide = true;
+          }
+        }
+        // B. Sticky elements: hide if currently sticking near the top of the viewport (<= 160px)
+        // e.g. YouTube chips bar, table headers, sticky navigation
+        else if (pos === 'sticky') {
+          if (rect.top <= 160 && rect.bottom > 0 && rect.height > 0 && rect.height < (vh * 0.45)) {
+            shouldHide = true;
+          }
+        }
+
+        if (shouldHide) {
+          // Avoid hiding an element if its ancestor is already hidden
+          let hasHiddenAncestor = false;
+          let parent = el.parentElement;
+          while (parent) {
+            if (hiddenFixedElementsMap.has(parent)) {
+              hasHiddenAncestor = true;
+              break;
             }
+            parent = parent.parentElement;
+          }
+
+          if (!hasHiddenAncestor && !hiddenFixedElementsMap.has(el)) {
+            hiddenFixedElementsMap.set(el, {
+              visibility: el.style.visibility || '',
+              opacity: el.style.opacity || ''
+            });
+            el.setAttribute('data-tiffy-hidden', 'true');
+            el.style.setProperty('visibility', 'hidden', 'important');
+            el.style.setProperty('opacity', '0', 'important');
+            el.style.setProperty('pointer-events', 'none', 'important');
           }
         }
       } catch (e) {}
     }
   }
 
-  function restoreFixedHeaders() {
-    // 1. Restore from Map
+  function restoreFixedAndStickyElements() {
     for (const [el, orig] of hiddenFixedElementsMap.entries()) {
       try {
-        if (orig) {
-          el.style.visibility = orig;
+        if (orig.visibility) {
+          el.style.visibility = orig.visibility;
         } else {
           el.style.removeProperty('visibility');
         }
+        if (orig.opacity) {
+          el.style.opacity = orig.opacity;
+        } else {
+          el.style.removeProperty('opacity');
+        }
+        el.style.removeProperty('pointer-events');
         el.removeAttribute('data-tiffy-hidden');
       } catch (e) {}
     }
     hiddenFixedElementsMap.clear();
 
-    // 2. Safety Net: restore any remaining elements with data-tiffy-hidden
+    // Safety Net: restore any remaining elements with data-tiffy-hidden
     document.querySelectorAll('[data-tiffy-hidden]').forEach(el => {
       try {
         el.style.removeProperty('visibility');
+        el.style.removeProperty('opacity');
+        el.style.removeProperty('pointer-events');
         el.removeAttribute('data-tiffy-hidden');
       } catch (e) {}
     });
   }
 
   // Safety net: auto-restore if user navigates away
-  window.addEventListener('beforeunload', restoreFixedHeaders);
+  window.addEventListener('beforeunload', restoreFixedAndStickyElements);
 
   // 3. Message handler
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -262,11 +287,9 @@
       case 'SCROLL_TO_POSITION': {
         const { y, stepIndex } = request;
 
-        // On subsequent steps (stepIndex > 0), hide sticky headers so they don't smear
-        if (stepIndex > 0) {
-          hideFixedHeaders();
-        } else {
-          restoreFixedHeaders();
+        // If stepIndex === 0, ensure all fixed and sticky elements are visible for natural top slice
+        if (stepIndex === 0) {
+          restoreFixedAndStickyElements();
         }
 
         window.scrollTo({
@@ -275,15 +298,26 @@
           behavior: 'instant'
         });
 
-        // Allow DOM paint & image lazy loading to settle
-        requestAnimationFrame(() => {
-          setTimeout(() => {
+        // Allow scroll and layout to settle, then hide all fixed and sticky elements for slices > 0
+        setTimeout(() => {
+          if (stepIndex > 0) {
+            hideAllFixedAndStickyElements();
+          }
+
+          requestAnimationFrame(() => {
+            const actualScrollHeight = Math.max(
+              document.documentElement.scrollHeight,
+              document.body ? document.body.scrollHeight : 0,
+              document.documentElement.clientHeight
+            );
+
             sendResponse({
               success: true,
-              currentY: window.scrollY
+              actualY: window.scrollY,
+              scrollHeight: actualScrollHeight
             });
-          }, 150);
-        });
+          });
+        }, 180);
         return true;
       }
 
@@ -307,7 +341,7 @@
 
       case 'RESTORE_PAGE': {
         removeFloatingBanner();
-        restoreFixedHeaders();
+        restoreFixedAndStickyElements();
         restoreScrollbars();
         window.scrollTo({
           top: originalScrollY,
