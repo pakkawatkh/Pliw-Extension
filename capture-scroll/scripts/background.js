@@ -165,13 +165,6 @@ async function performFullPageCapture(tabId) {
       }
     }
 
-    // Restore page scroll, fixed elements, and remove banner
-    await chrome.tabs.sendMessage(tabId, { action: 'RESTORE_PAGE' }).catch(() => {});
-
-    if (slices.length === 0) {
-      throw new Error('No slices were captured.');
-    }
-
     // 4. Stitch onto high-DPI OffscreenCanvas
     const lastSlice = slices[slices.length - 1];
     const totalLogicalHeight = shouldStopEarly
@@ -230,8 +223,9 @@ async function performFullPageCapture(tabId) {
         error: err.message || 'Capture failed'
       }).catch(() => {});
     }
-    // Attempt cleanup
-    chrome.tabs.sendMessage(tabId, { action: 'RESTORE_PAGE' }).catch(() => {});
+  } finally {
+    // Guaranteed cleanup: restore scroll position, unhide fixed elements, and remove banner
+    await chrome.tabs.sendMessage(tabId, { action: 'RESTORE_PAGE' }).catch(() => {});
   }
 }
 

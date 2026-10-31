@@ -151,34 +151,74 @@
     }
   }
 
-  // 2. Locate fixed & sticky elements to prevent repeating headers
-  function handleFixedElements(hide) {
-    if (hide) {
-      hiddenFixedElements = [];
-      const allElements = document.querySelectorAll('*');
-      for (const el of allElements) {
-        // Only inspect visible elements within current viewport
+  // 3. Locate and hide fixed/sticky headers safely without breaking page styles
+  const hiddenFixedElementsMap = new Map(); // element -> original inline visibility
+
+  function hideFixedHeaders() {
+    // Only capture and hide once per session; do not wipe or repeat
+    if (hiddenFixedElementsMap.size > 0) return;
+
+    const candidates = document.querySelectorAll('header, nav, [role="banner"], ytd-masthead, #masthead, #header, div');
+    const vw = window.innerWidth;
+
+    for (const el of candidates) {
+      if (el.id === 'tiffy-floating-capture-bar') continue;
+
+      try {
         const style = window.getComputedStyle(el);
-        if ((style.position === 'fixed' || style.position === 'sticky') && style.visibility !== 'hidden' && style.display !== 'none') {
+        const isFixedOrSticky = style.position === 'fixed' || style.position === 'sticky';
+
+        if (isFixedOrSticky && style.display !== 'none' && style.visibility !== 'hidden') {
           const rect = el.getBoundingClientRect();
-          // Hide only if it sticks near top or covers screen
-          if (rect.height > 0 && rect.width > 0) {
-            hiddenFixedElements.push({
-              element: el,
-              originalVisibility: el.style.visibility
-            });
-            el.style.visibility = 'hidden';
+          // Only target top-level banners sticking near top edge of the viewport
+          if (rect.top <= 10 && rect.height > 0 && rect.height < (window.innerHeight * 0.4) && rect.width >= vw * 0.5) {
+            // Check if ancestor is already hidden to prevent redundant child hiding
+            let hasHiddenAncestor = false;
+            let parent = el.parentElement;
+            while (parent) {
+              if (hiddenFixedElementsMap.has(parent)) {
+                hasHiddenAncestor = true;
+                break;
+              }
+              parent = parent.parentElement;
+            }
+
+            if (!hasHiddenAncestor) {
+              hiddenFixedElementsMap.set(el, el.style.visibility || '');
+              el.setAttribute('data-tiffy-hidden', 'true');
+              el.style.setProperty('visibility', 'hidden', 'important');
+            }
           }
         }
-      }
-    } else {
-      // Restore
-      for (const item of hiddenFixedElements) {
-        item.element.style.visibility = item.originalVisibility;
-      }
-      hiddenFixedElements = [];
+      } catch (e) {}
     }
   }
+
+  function restoreFixedHeaders() {
+    // 1. Restore from Map
+    for (const [el, orig] of hiddenFixedElementsMap.entries()) {
+      try {
+        if (orig) {
+          el.style.visibility = orig;
+        } else {
+          el.style.removeProperty('visibility');
+        }
+        el.removeAttribute('data-tiffy-hidden');
+      } catch (e) {}
+    }
+    hiddenFixedElementsMap.clear();
+
+    // 2. Safety Net: restore any remaining elements with data-tiffy-hidden
+    document.querySelectorAll('[data-tiffy-hidden]').forEach(el => {
+      try {
+        el.style.removeProperty('visibility');
+        el.removeAttribute('data-tiffy-hidden');
+      } catch (e) {}
+    });
+  }
+
+  // Safety net: auto-restore if user navigates away
+  window.addEventListener('beforeunload', restoreFixedHeaders);
 
   // 3. Message handler
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -224,9 +264,9 @@
 
         // On subsequent steps (stepIndex > 0), hide sticky headers so they don't smear
         if (stepIndex > 0) {
-          handleFixedElements(true);
+          hideFixedHeaders();
         } else {
-          handleFixedElements(false);
+          restoreFixedHeaders();
         }
 
         window.scrollTo({
@@ -267,7 +307,7 @@
 
       case 'RESTORE_PAGE': {
         removeFloatingBanner();
-        handleFixedElements(false);
+        restoreFixedHeaders();
         restoreScrollbars();
         window.scrollTo({
           top: originalScrollY,
