@@ -1,4 +1,4 @@
-// popup.js - Capture Scroll Trigger Controller
+// popup.js - Tiffy Scroll Trigger Controller
 
 document.addEventListener('DOMContentLoaded', () => {
   const btnCaptureFull = document.getElementById('btn-capture-full');

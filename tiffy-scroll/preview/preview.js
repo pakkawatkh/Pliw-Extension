@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   pageTitle = record.title || 'Screenshot';
   badgeTitle.textContent = pageTitle;
-  document.title = `${pageTitle} • Capture Scroll Studio`;
+  document.title = `${pageTitle} • Tiffy Scroll Studio`;
 
   // 2. Load into image & canvas
   const img = new Image();

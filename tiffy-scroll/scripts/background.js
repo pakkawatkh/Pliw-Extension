@@ -95,7 +95,7 @@ async function safeCaptureVisibleTab(windowId = null, retries = 4) {
         err.message.includes('quota')
       );
       if (isQuotaError && attempt < retries) {
-        console.warn(`[Capture Scroll] Quota hit, backing off (attempt ${attempt + 1}/${retries})...`);
+        console.warn(`[Tiffy Scroll] Quota hit, backing off (attempt ${attempt + 1}/${retries})...`);
         await new Promise(resolve => setTimeout(resolve, 800 + (attempt * 300)));
       } else {
         throw err;
@@ -157,7 +157,7 @@ async function performFullPageCapture(tabId) {
         throw new Error('Capture cancelled by user.');
       }
       if (shouldStopEarly && slices.length > 0) {
-        console.log('[Capture Scroll] Stop early requested by user at step', i);
+        console.log('[Tiffy Scroll] Stop early requested by user at step', i);
         break;
       }
 
