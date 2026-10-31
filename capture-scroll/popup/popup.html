@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capture Scroll</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="brand">
+        <img src="../icons/icon32.png" alt="Logo" class="brand-icon">
+        <div class="brand-text">
+          <h1>Capture Scroll</h1>
+          <span class="brand-sub">Full-Page Studio</span>
+        </div>
+      </div>
+      <span class="badge-v">v1.0</span>
+    </header>
+
+    <main class="popup-body">
+      <!-- Action 1: Full Page -->
+      <button id="btn-capture-full" class="btn-action btn-primary">
+        <div class="btn-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
+        <div class="btn-content">
+          <span class="btn-title">Capture Entire Page</span>
+          <span class="btn-desc">Auto-scroll, stitch &amp; open in Studio</span>
+        </div>
+      </button>
+
+      <!-- Action 2: Visible Area -->
+      <button id="btn-capture-visible" class="btn-action btn-secondary">
+        <div class="btn-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+        <div class="btn-content">
+          <span class="btn-title">Capture Visible Area</span>
+          <span class="btn-desc">Instant snapshot of current view</span>
+        </div>
+      </button>
+
+      <!-- Progress status box (hidden by default) -->
+      <div id="status-card" class="status-card hidden">
+        <div class="status-top">
+          <span id="status-text" class="status-text">Preparing capture...</span>
+          <span id="status-percent" class="status-percent">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="popup-footer">
+      <div class="shortcut-tip">
+        <span>Shortcut:</span>
+        <kbd class="kbd">⌘⇧S</kbd>
+      </div>
+      <a href="https://pakkawatkh.github.io/tiffy-app/" target="_blank" rel="noopener" class="footer-link">Tiffy Suite ↗</a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

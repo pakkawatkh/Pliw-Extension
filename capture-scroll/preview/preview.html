@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview Studio • Capture Scroll</title>
+  <link rel="stylesheet" href="preview.css">
+</head>
+<body>
+  <!-- Studio Top Navigation -->
+  <header class="studio-header">
+    <div class="header-left">
+      <div class="studio-brand">
+        <img src="../icons/icon32.png" alt="Logo" class="studio-icon">
+        <span class="studio-title">Capture Scroll Studio</span>
+      </div>
+      <div id="meta-badge" class="meta-badge">
+        <span id="badge-title" class="badge-title">Loading screenshot...</span>
+        <span id="badge-dims" class="badge-dims">0 × 0 px</span>
+      </div>
+    </div>
+
+    <!-- Center: Zoom & View Controls -->
+    <div class="header-center">
+      <div class="view-btn-group">
+        <button id="btn-zoom-out" class="icon-btn" title="Zoom Out (-)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        </button>
+        <span id="zoom-level" class="zoom-level-text">100%</span>
+        <button id="btn-zoom-in" class="icon-btn" title="Zoom In (+)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        </button>
+      </div>
+
+      <div class="view-btn-group">
+        <button id="btn-fit-width" class="text-btn active" title="Fit to width">Fit Width</button>
+        <button id="btn-actual-size" class="text-btn" title="Actual 100% size">100% Size</button>
+      </div>
+    </div>
+
+    <!-- Right: Primary Actions (Copy, Crop, Download) -->
+    <div class="header-right">
+      <!-- Crop Tool Trigger -->
+      <button id="btn-crop-toggle" class="studio-btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"></path><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"></path></svg>
+        <span>Crop (ครอบตัด)</span>
+      </button>
+
+      <!-- Reset Crop (hidden initially) -->
+      <button id="btn-reset-crop" class="studio-btn btn-secondary hidden" title="Restore original uncropped image">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+        <span>Reset Original</span>
+      </button>
+
+      <!-- Copy to Clipboard -->
+      <button id="btn-copy-clipboard" class="studio-btn btn-secondary" title="Copy image directly to macOS/Windows clipboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span>Copy Image (คัดลอก)</span>
+      </button>
+
+      <!-- Download PNG -->
+      <button id="btn-download-png" class="studio-btn btn-primary" title="Download PNG file">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Download PNG</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Crop Floating Action Bar (Visible only during crop mode) -->
+  <div id="crop-action-bar" class="crop-action-bar hidden">
+    <div class="crop-info">
+      <span class="crop-lbl">Crop Selection:</span>
+      <span id="crop-dims" class="crop-dims-val">0 × 0 px</span>
+    </div>
+    <div class="crop-btns">
+      <button id="btn-apply-crop" class="studio-btn btn-primary btn-sm">
+        ✓ Apply Crop (ตัดภาพ)
+      </button>
+      <button id="btn-cancel-crop" class="studio-btn btn-secondary btn-sm">
+        ✕ Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Studio Workspace Canvas Viewer -->
+  <main class="studio-workspace" id="workspace">
+    <div class="canvas-stage" id="canvas-stage">
+      <div class="image-wrapper" id="image-wrapper">
+        <canvas id="main-canvas"></canvas>
+        <!-- Interactive Crop Overlay -->
+        <div id="crop-overlay" class="crop-overlay hidden">
+          <div id="crop-box" class="crop-box">
+            <div class="crop-handle handle-nw" data-handle="nw"></div>
+            <div class="crop-handle handle-n" data-handle="n"></div>
+            <div class="crop-handle handle-ne" data-handle="ne"></div>
+            <div class="crop-handle handle-e" data-handle="e"></div>
+            <div class="crop-handle handle-se" data-handle="se"></div>
+            <div class="crop-handle handle-s" data-handle="s"></div>
+            <div class="crop-handle handle-sw" data-handle="sw"></div>
+            <div class="crop-handle handle-w" data-handle="w"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast hidden">
+    <span id="toast-icon">✅</span>
+    <span id="toast-message">Copied to clipboard! Ready to paste (⌘V)</span>
+  </div>
+
+  <script src="cropper-engine.js"></script>
+  <script src="preview.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node / Bundler (if any)
+node_modules/
+dist/
+*.log
+
+# Screenshots & Local Test artifacts
+*.tmp
+test-output/
