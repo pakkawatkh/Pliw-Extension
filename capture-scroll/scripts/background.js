@@ -29,7 +29,37 @@ async function saveScreenshot(id, data) {
   });
 }
 
-// 2. Ensure content script is injected in active tab
+// 2. Rate-limiting helper to strictly respect Chromium's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota
+let lastCaptureTimestamp = 0;
+const MIN_CAPTURE_INTERVAL_MS = 650; // Chromium limit is 2 calls/sec (500ms). 650ms guarantees 100% safety.
+
+async function safeCaptureVisibleTab(windowId = null, retries = 4) {
+  const now = Date.now();
+  const elapsed = now - lastCaptureTimestamp;
+  if (elapsed < MIN_CAPTURE_INTERVAL_MS) {
+    await new Promise(resolve => setTimeout(resolve, MIN_CAPTURE_INTERVAL_MS - elapsed));
+  }
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      lastCaptureTimestamp = Date.now();
+      return await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
+    } catch (err) {
+      const isQuotaError = err.message && (
+        err.message.includes('MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND') ||
+        err.message.includes('quota')
+      );
+      if (isQuotaError && attempt < retries) {
+        console.warn(`[Capture Scroll] Quota hit, backing off (attempt ${attempt + 1}/${retries})...`);
+        await new Promise(resolve => setTimeout(resolve, 800 + (attempt * 300)));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
+// 3. Ensure content script is injected in active tab
 async function ensureContentScript(tabId) {
   try {
     // Try pinging
@@ -85,8 +115,8 @@ async function performFullPageCapture(tabId) {
         stepIndex: i
       });
 
-      // 2. Capture viewport
-      const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+      // 2. Capture viewport (using rate-limited safe capture)
+      const dataUrl = await safeCaptureVisibleTab(null);
       slices.push({
         y: scrollY,
         dataUrl,
@@ -162,7 +192,7 @@ async function performFullPageCapture(tabId) {
 // 4. Visible viewport capture
 async function performVisibleCapture(tabId) {
   try {
-    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+    const dataUrl = await safeCaptureVisibleTab(null);
     const tab = await chrome.tabs.get(tabId);
 
     const captureId = `capture_${Date.now()}`;

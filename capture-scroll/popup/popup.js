@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statusCard.classList.remove('hidden');
     statusText.textContent = text;
     statusPercent.textContent = `${Math.round(percent)}%`;
+    progressBarFill.style.background = 'linear-gradient(90deg, #38bdf8 0%, #0284c7 100%)';
     progressBarFill.style.width = `${Math.round(percent)}%`;
     btnCaptureFull.disabled = true;
     btnCaptureVisible.disabled = true;
