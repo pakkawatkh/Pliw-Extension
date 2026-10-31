@@ -59,7 +59,11 @@ async function safeCaptureVisibleTab(windowId = null, retries = 4) {
   }
 }
 
-// 3. Ensure content script is injected in active tab
+// 3. Capture state flags for stopping or cancelling early
+let shouldStopEarly = false;
+let shouldCancel = false;
+
+// 4. Ensure content script is injected in active tab
 async function ensureContentScript(tabId) {
   try {
     // Try pinging
@@ -77,8 +81,11 @@ async function ensureContentScript(tabId) {
   return true;
 }
 
-// 3. Full-page capture & canvas stitching engine
+// 4. Full-page capture & canvas stitching engine
 async function performFullPageCapture(tabId) {
+  shouldStopEarly = false;
+  shouldCancel = false;
+
   try {
     await ensureContentScript(tabId);
 
@@ -101,12 +108,27 @@ async function performFullPageCapture(tabId) {
 
     // Loop through each slice
     for (let i = 0; i < totalSteps; i++) {
+      if (shouldCancel) {
+        throw new Error('Capture cancelled by user.');
+      }
+      if (shouldStopEarly && slices.length > 0) {
+        console.log('[Capture Scroll] Stop early requested by user at step', i);
+        break;
+      }
+
       let scrollY = i * viewportHeight;
 
       // Handle the last slice: prevent overscrolling past bottom
       if (scrollY + viewportHeight > scrollHeight) {
         scrollY = Math.max(0, scrollHeight - viewportHeight);
       }
+
+      // Update floating on-page banner
+      await chrome.tabs.sendMessage(tabId, {
+        action: 'UPDATE_FLOATING_BANNER',
+        step: i + 1,
+        totalSteps
+      }).catch(() => {});
 
       // 1. Tell page to scroll
       await chrome.tabs.sendMessage(tabId, {
@@ -115,8 +137,15 @@ async function performFullPageCapture(tabId) {
         stepIndex: i
       });
 
+      // Temporarily hide banner so it is not in the screenshot
+      await chrome.tabs.sendMessage(tabId, { action: 'HIDE_BANNER' }).catch(() => {});
+
       // 2. Capture viewport (using rate-limited safe capture)
       const dataUrl = await safeCaptureVisibleTab(null);
+
+      // Restore banner visibility
+      await chrome.tabs.sendMessage(tabId, { action: 'SHOW_BANNER' }).catch(() => {});
+
       slices.push({
         y: scrollY,
         dataUrl,
@@ -130,14 +159,27 @@ async function performFullPageCapture(tabId) {
         totalSteps,
         status: `Captured section ${i + 1} of ${totalSteps}...`
       }).catch(() => {});
+
+      if (shouldStopEarly) {
+        break;
+      }
     }
 
-    // Restore page scroll and fixed elements
+    // Restore page scroll, fixed elements, and remove banner
     await chrome.tabs.sendMessage(tabId, { action: 'RESTORE_PAGE' }).catch(() => {});
 
+    if (slices.length === 0) {
+      throw new Error('No slices were captured.');
+    }
+
     // 4. Stitch onto high-DPI OffscreenCanvas
+    const lastSlice = slices[slices.length - 1];
+    const totalLogicalHeight = shouldStopEarly
+      ? Math.min(lastSlice.y + viewportHeight, scrollHeight)
+      : scrollHeight;
+
     const physicalWidth = Math.round(viewportWidth * dpr);
-    const physicalHeight = Math.round(scrollHeight * dpr);
+    const physicalHeight = Math.round(totalLogicalHeight * dpr);
 
     const canvas = new OffscreenCanvas(physicalWidth, physicalHeight);
     const ctx = canvas.getContext('2d');
@@ -179,17 +221,21 @@ async function performFullPageCapture(tabId) {
     await chrome.tabs.create({ url: previewUrl });
 
   } catch (err) {
-    console.error('Full page capture failed:', err);
-    chrome.runtime.sendMessage({
-      action: 'CAPTURE_ERROR',
-      error: err.message || 'Capture failed'
-    }).catch(() => {});
+    console.error('Full page capture stopped/failed:', err);
+    if (err.message && err.message.includes('cancelled')) {
+      chrome.runtime.sendMessage({ action: 'CAPTURE_CANCELLED' }).catch(() => {});
+    } else {
+      chrome.runtime.sendMessage({
+        action: 'CAPTURE_ERROR',
+        error: err.message || 'Capture failed'
+      }).catch(() => {});
+    }
     // Attempt cleanup
     chrome.tabs.sendMessage(tabId, { action: 'RESTORE_PAGE' }).catch(() => {});
   }
 }
 
-// 4. Visible viewport capture
+// 5. Visible viewport capture
 async function performVisibleCapture(tabId) {
   try {
     const dataUrl = await safeCaptureVisibleTab(null);
@@ -215,12 +261,16 @@ async function performVisibleCapture(tabId) {
   }
 }
 
-// 5. Message & Command Router
+// 6. Message & Command Router
 chrome.runtime.onMessage.addListener((request, sender) => {
   if (request.action === 'START_FULL_CAPTURE') {
     performFullPageCapture(request.tabId);
   } else if (request.action === 'START_VISIBLE_CAPTURE') {
     performVisibleCapture(request.tabId);
+  } else if (request.action === 'STOP_CAPTURE') {
+    shouldStopEarly = true;
+  } else if (request.action === 'CANCEL_CAPTURE') {
+    shouldCancel = true;
   }
 });
 

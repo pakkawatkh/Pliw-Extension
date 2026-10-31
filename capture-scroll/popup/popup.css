@@ -214,6 +214,54 @@ body {
   transition: width 0.2s ease;
 }
 
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-stop-pill {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #ef4444;
+  color: #dc2626;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: var(--transition);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.1);
+}
+
+.btn-stop-pill:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn-cancel-pill {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-cancel-pill:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+
 /* Footer */
 .popup-footer {
   display: flex;

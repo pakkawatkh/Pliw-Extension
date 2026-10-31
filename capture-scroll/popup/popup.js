@@ -69,6 +69,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const btnStopCapture = document.getElementById('btn-stop-capture');
+  const btnCancelCapture = document.getElementById('btn-cancel-capture');
+
+  function resetUI() {
+    statusCard.classList.add('hidden');
+    btnCaptureFull.disabled = false;
+    btnCaptureVisible.disabled = false;
+    btnCaptureFull.style.opacity = '1';
+    btnCaptureVisible.style.opacity = '1';
+  }
+
+  // Stop & Finish early
+  btnStopCapture.addEventListener('click', () => {
+    btnStopCapture.disabled = true;
+    btnStopCapture.textContent = 'Stopping & stitching...';
+    chrome.runtime.sendMessage({ action: 'STOP_CAPTURE' });
+  });
+
+  // Cancel & discard
+  btnCancelCapture.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'CANCEL_CAPTURE' });
+    resetUI();
+  });
+
   // 3. Listen for progress reports from background worker
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'CAPTURE_PROGRESS') {
@@ -79,6 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         window.close();
       }, 500);
+    } else if (message.action === 'CAPTURE_CANCELLED') {
+      resetUI();
     } else if (message.action === 'CAPTURE_ERROR') {
       statusText.textContent = `Error: ${message.error}`;
       statusPercent.textContent = '!';
