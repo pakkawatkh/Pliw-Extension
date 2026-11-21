@@ -7,7 +7,6 @@
 
   let originalScrollX = 0;
   let originalScrollY = 0;
-  let hiddenFixedElements = [];
   let scrollbarStyleTag = null;
   let floatingBanner = null;
 
@@ -115,11 +114,15 @@
   }
 
   function hideFloatingBanner() {
-    if (floatingBanner) floatingBanner.style.display = 'none';
+    if (floatingBanner) {
+      floatingBanner.style.setProperty('display', 'none', 'important');
+    }
   }
 
   function showFloatingBanner() {
-    if (floatingBanner) floatingBanner.style.display = 'flex';
+    if (floatingBanner) {
+      floatingBanner.style.setProperty('display', 'flex', 'important');
+    }
   }
 
   function removeFloatingBanner() {
@@ -152,7 +155,7 @@
   }
 
   // 3. Locate and hide fixed/sticky elements (headers, chips, sidebars, floating widgets)
-  const hiddenFixedElementsMap = new Map(); // element -> { visibility, opacity }
+  const hiddenFixedElementsMap = new Map();
 
   function hideAllFixedAndStickyElements() {
     const vh = window.innerHeight;
@@ -160,6 +163,7 @@
 
     for (const el of all) {
       if (!el || el.id === 'tiffy-floating-capture-bar') continue;
+      if (el.closest && el.closest('#tiffy-floating-capture-bar')) continue;
 
       try {
         const style = window.getComputedStyle(el);
@@ -199,8 +203,12 @@
 
           if (!hasHiddenAncestor && !hiddenFixedElementsMap.has(el)) {
             hiddenFixedElementsMap.set(el, {
-              visibility: el.style.visibility || '',
-              opacity: el.style.opacity || ''
+              visibility: el.style.getPropertyValue('visibility'),
+              visibilityPriority: el.style.getPropertyPriority('visibility'),
+              opacity: el.style.getPropertyValue('opacity'),
+              opacityPriority: el.style.getPropertyPriority('opacity'),
+              pointerEvents: el.style.getPropertyValue('pointer-events'),
+              pointerEventsPriority: el.style.getPropertyPriority('pointer-events')
             });
             el.setAttribute('data-tiffy-hidden', 'true');
             el.style.setProperty('visibility', 'hidden', 'important');
@@ -212,20 +220,20 @@
     }
   }
 
+  function restoreStyleProp(el, prop, value, priority) {
+    if (value) {
+      el.style.setProperty(prop, value, priority || '');
+    } else {
+      el.style.removeProperty(prop);
+    }
+  }
+
   function restoreFixedAndStickyElements() {
     for (const [el, orig] of hiddenFixedElementsMap.entries()) {
       try {
-        if (orig.visibility) {
-          el.style.visibility = orig.visibility;
-        } else {
-          el.style.removeProperty('visibility');
-        }
-        if (orig.opacity) {
-          el.style.opacity = orig.opacity;
-        } else {
-          el.style.removeProperty('opacity');
-        }
-        el.style.removeProperty('pointer-events');
+        restoreStyleProp(el, 'visibility', orig.visibility, orig.visibilityPriority);
+        restoreStyleProp(el, 'opacity', orig.opacity, orig.opacityPriority);
+        restoreStyleProp(el, 'pointer-events', orig.pointerEvents, orig.pointerEventsPriority);
         el.removeAttribute('data-tiffy-hidden');
       } catch (e) {}
     }
@@ -245,9 +253,14 @@
   // Safety net: auto-restore if user navigates away
   window.addEventListener('beforeunload', restoreFixedAndStickyElements);
 
-  // 3. Message handler
+  // 4. Message handler
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.action) {
+      case 'PING': {
+        sendResponse({ success: true });
+        return true;
+      }
+
       case 'INIT_CAPTURE_METRICS': {
         originalScrollX = window.scrollX;
         originalScrollY = window.scrollY;
@@ -267,9 +280,7 @@
           document.documentElement.clientHeight
         );
         const dpr = window.devicePixelRatio || 1;
-
-        // Generate scroll steps
-        const totalSteps = Math.ceil(scrollHeight / viewportHeight);
+        const totalSteps = Math.max(1, Math.ceil(scrollHeight / viewportHeight));
 
         sendResponse({
           success: true,
@@ -329,7 +340,12 @@
 
       case 'HIDE_BANNER': {
         hideFloatingBanner();
-        sendResponse({ success: true });
+        // Wait two animation frames so Chromium commits the hidden banner before captureVisibleTab
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            sendResponse({ success: true });
+          });
+        });
         return true;
       }
 

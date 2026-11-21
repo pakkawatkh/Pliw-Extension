@@ -4,6 +4,8 @@
 const DB_NAME = 'TiffyCaptureScrollDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'screenshots';
+const PREVIEW_TAB_KEY_PREFIX = 'preview_tab_';
+const MAX_CANVAS_DIMENSION = 24000;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -60,19 +62,62 @@ async function cleanupOldScreenshots() {
   } catch (err) {}
 }
 
-// Map tracking preview tab ID to capture ID for instant auto-destruction on close
-const previewTabMap = new Map(); // tabId -> captureId
+// Track preview tab ID -> capture ID in chrome.storage.session so it survives MV3 Service Worker restarts
+const previewTabFallbackMap = new Map();
+
+async function registerPreviewTab(tabId, captureId) {
+  previewTabFallbackMap.set(tabId, captureId);
+  try {
+    if (chrome.storage && chrome.storage.session) {
+      await chrome.storage.session.set({ [`${PREVIEW_TAB_KEY_PREFIX}${tabId}`]: captureId });
+    }
+  } catch (err) {}
+}
+
+async function popPreviewTabCaptureId(tabId) {
+  let captureId = previewTabFallbackMap.get(tabId) || null;
+  previewTabFallbackMap.delete(tabId);
+  try {
+    if (chrome.storage && chrome.storage.session) {
+      const key = `${PREVIEW_TAB_KEY_PREFIX}${tabId}`;
+      const res = await chrome.storage.session.get(key);
+      if (res && res[key]) {
+        captureId = res[key];
+      }
+      await chrome.storage.session.remove(key);
+    }
+  } catch (err) {}
+  return captureId;
+}
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (previewTabMap.has(tabId)) {
-    const captureId = previewTabMap.get(tabId);
-    previewTabMap.delete(tabId);
-    deleteScreenshot(captureId).catch(() => {});
-  }
+  popPreviewTabCaptureId(tabId)
+    .then((captureId) => {
+      if (captureId) {
+        return deleteScreenshot(captureId);
+      }
+    })
+    .catch(() => {});
 });
 
 // Run garbage cleanup on extension start
 cleanupOldScreenshots();
+
+function isRestrictedUrl(url) {
+  if (!url) return true;
+  const restrictedPrefixes = [
+    'chrome://',
+    'brave://',
+    'edge://',
+    'chrome-extension://',
+    'devtools://',
+    'about:',
+    'view-source:',
+    'https://chromewebstore.google.com',
+    'https://chrome.google.com/webstore'
+  ];
+  return restrictedPrefixes.some((prefix) => url.startsWith(prefix));
+}
 
 // 2. Rate-limiting helper to strictly respect Chromium's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota
 let lastCaptureTimestamp = 0;
@@ -104,35 +149,61 @@ async function safeCaptureVisibleTab(windowId = null, retries = 4) {
   }
 }
 
-// 3. Capture state flags for stopping or cancelling early
+// Ensure target tab is still active in its window before capturing its pixels
+async function getVerifiedCaptureWindowId(tabId) {
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab) {
+    throw new Error('Target tab was closed during capture.');
+  }
+  if (!tab.active) {
+    throw new Error('Capture stopped because you switched to another tab.');
+  }
+  return tab.windowId;
+}
+
+// 3. Capture state flags for preventing overlap and handling stop/cancel
+let isCapturing = false;
 let shouldStopEarly = false;
 let shouldCancel = false;
 
-// 4. Ensure content script is injected in active tab
+// 4. Ensure content script is injected in active tab without side effects
 async function ensureContentScript(tabId) {
   try {
-    // Try pinging
-    const res = await chrome.tabs.sendMessage(tabId, { action: 'INIT_CAPTURE_METRICS' });
+    const res = await chrome.tabs.sendMessage(tabId, { action: 'PING' });
     if (res && res.success) return true;
   } catch (err) {
-    // Content script not yet present, inject it dynamically
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ['scripts/content.js']
     });
-    // Wait brief moment for initialization
     await new Promise(r => setTimeout(r, 100));
   }
   return true;
 }
 
-// 4. Full-page capture & canvas stitching engine
+// 5. Full-page capture & canvas stitching engine
 async function performFullPageCapture(tabId) {
+  if (isCapturing) {
+    chrome.runtime.sendMessage({
+      action: 'CAPTURE_ERROR',
+      error: 'A capture is already in progress.'
+    }).catch(() => {});
+    return;
+  }
+
+  isCapturing = true;
   shouldStopEarly = false;
   shouldCancel = false;
+  let injected = false;
 
   try {
+    const initialTab = await chrome.tabs.get(tabId);
+    if (!initialTab || isRestrictedUrl(initialTab.url)) {
+      throw new Error('Chromium security prevents capturing internal or restricted browser pages.');
+    }
+
     await ensureContentScript(tabId);
+    injected = true;
 
     // Get metrics from tab
     const metrics = await chrome.tabs.sendMessage(tabId, { action: 'INIT_CAPTURE_METRICS' });
@@ -148,12 +219,12 @@ async function performFullPageCapture(tabId) {
     let canvasDrawnHeight = 0;
     let currentActualY = 0;
 
-    // Notify popup of progress start
+    const initialTotalSteps = Math.max(1, Math.ceil(scrollHeight / viewportHeight));
     chrome.runtime.sendMessage({
       action: 'CAPTURE_PROGRESS',
       step: 0,
-      totalSteps: Math.ceil(scrollHeight / viewportHeight),
-      status: `Starting capture (1/${Math.ceil(scrollHeight / viewportHeight)})...`
+      totalSteps: initialTotalSteps,
+      status: `Starting capture (1/${initialTotalSteps})...`
     }).catch(() => {});
 
     // --- STEP 0: Slice 0 (Initial top of the page with natural headers & sidebars) ---
@@ -164,7 +235,8 @@ async function performFullPageCapture(tabId) {
     });
 
     await chrome.tabs.sendMessage(tabId, { action: 'HIDE_BANNER' }).catch(() => {});
-    const firstDataUrl = await safeCaptureVisibleTab(null);
+    const step0WindowId = await getVerifiedCaptureWindowId(tabId);
+    const firstDataUrl = await safeCaptureVisibleTab(step0WindowId);
     await chrome.tabs.sendMessage(tabId, { action: 'SHOW_BANNER' }).catch(() => {});
 
     sliceDrawInstructions.push({
@@ -183,7 +255,7 @@ async function performFullPageCapture(tabId) {
     chrome.runtime.sendMessage({
       action: 'CAPTURE_PROGRESS',
       step: 1,
-      totalSteps: Math.ceil(scrollHeight / viewportHeight),
+      totalSteps: Math.max(1, Math.ceil(scrollHeight / viewportHeight)),
       status: `Captured section 1...`
     }).catch(() => {});
 
@@ -198,30 +270,25 @@ async function performFullPageCapture(tabId) {
         break;
       }
 
-      // Check if we already reached or exceeded the document bottom
       if (canvasDrawnHeight >= scrollHeight) {
         break;
       }
 
-      // Compute next target scroll position
       let targetY = currentActualY + viewportHeight;
       if (targetY + viewportHeight > scrollHeight) {
         targetY = Math.max(0, scrollHeight - viewportHeight);
       }
 
-      // If target cannot advance, stop
       if (targetY <= currentActualY) {
         break;
       }
 
-      // Update floating banner
       await chrome.tabs.sendMessage(tabId, {
         action: 'UPDATE_FLOATING_BANNER',
         step: step + 1,
         totalSteps: Math.max(step + 1, Math.ceil(scrollHeight / viewportHeight))
       }).catch(() => {});
 
-      // Scroll and hide fixed/sticky elements
       const scrollRes = await chrome.tabs.sendMessage(tabId, {
         action: 'SCROLL_TO_POSITION',
         y: targetY,
@@ -238,24 +305,22 @@ async function performFullPageCapture(tabId) {
 
       const deltaY = newActualY - currentActualY;
       if (deltaY <= 0) {
-        // Could not scroll further
         break;
       }
 
-      // Capture visible tab
+      // Capture visible tab from the verified target window
       await chrome.tabs.sendMessage(tabId, { action: 'HIDE_BANNER' }).catch(() => {});
-      const sliceDataUrl = await safeCaptureVisibleTab(null);
+      const stepWindowId = await getVerifiedCaptureWindowId(tabId);
+      const sliceDataUrl = await safeCaptureVisibleTab(stepWindowId);
       await chrome.tabs.sendMessage(tabId, { action: 'SHOW_BANNER' }).catch(() => {});
 
-      // DELTA STITCHING:
-      // The new pixels revealed by scrolling down by deltaY are at the bottom of the viewport
       const sourceY = Math.max(0, viewportHeight - deltaY);
       const sourceHeight = Math.min(deltaY, viewportHeight);
 
       sliceDrawInstructions.push({
         dataUrl: sliceDataUrl,
-        sourceY: sourceY,
-        sourceHeight: sourceHeight,
+        sourceY,
+        sourceHeight,
         destY: canvasDrawnHeight,
         destHeight: sourceHeight
       });
@@ -270,7 +335,6 @@ async function performFullPageCapture(tabId) {
         status: `Captured section ${step + 1}...`
       }).catch(() => {});
 
-      // Check if we hit the bottom of the document
       if (newActualY + viewportHeight >= scrollHeight) {
         break;
       }
@@ -278,35 +342,68 @@ async function performFullPageCapture(tabId) {
       step++;
     }
 
+    if (shouldCancel) {
+      throw new Error('Capture cancelled by user.');
+    }
+
     // --- RENDER SEAMLESS HIGH-DPI CANVAS ---
-    const physicalWidth = Math.round(viewportWidth * dpr);
-    const physicalHeight = Math.round(canvasDrawnHeight * dpr);
+    // Inspect first slice bitmap to get exact physical pixel dimensions (avoids 1-2px zoom/DPR rounding drift)
+    const firstBlob = await (await fetch(sliceDrawInstructions[0].dataUrl)).blob();
+    const firstBitmap = await createImageBitmap(firstBlob);
+    const actualBitmapWidth = firstBitmap.width;
+    const actualBitmapHeight = firstBitmap.height;
+    const scaleY = actualBitmapHeight / viewportHeight;
+
+    const rawPhysicalWidth = actualBitmapWidth;
+    const rawPhysicalHeight = Math.round(canvasDrawnHeight * scaleY);
+
+    // Guard Chromium canvas dimension ceiling so ultra-long Retina pages never render blank or crash
+    const outputScale = Math.min(
+      1,
+      MAX_CANVAS_DIMENSION / rawPhysicalWidth,
+      MAX_CANVAS_DIMENSION / rawPhysicalHeight
+    );
+    const physicalWidth = Math.max(1, Math.round(rawPhysicalWidth * outputScale));
+    const physicalHeight = Math.max(1, Math.round(rawPhysicalHeight * outputScale));
 
     const canvas = new OffscreenCanvas(physicalWidth, physicalHeight);
     const ctx = canvas.getContext('2d');
-
-    for (const inst of sliceDrawInstructions) {
-      const blob = await (await fetch(inst.dataUrl)).blob();
-      const bitmap = await createImageBitmap(blob);
-
-      const sX = 0;
-      const sY = Math.round(inst.sourceY * dpr);
-      const sW = physicalWidth;
-      const sH = Math.round(inst.sourceHeight * dpr);
-
-      const dX = 0;
-      const dY = Math.round(inst.destY * dpr);
-      const dW = physicalWidth;
-      const dH = Math.round(inst.destHeight * dpr);
-
-      ctx.drawImage(bitmap, sX, sY, sW, sH, dX, dY, dW, dH);
+    if (outputScale < 1) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
     }
 
-    // Convert stitched canvas to Blob
+    for (let i = 0; i < sliceDrawInstructions.length; i++) {
+      const inst = sliceDrawInstructions[i];
+      const bitmap = i === 0
+        ? firstBitmap
+        : await createImageBitmap(await (await fetch(inst.dataUrl)).blob());
+
+      try {
+        const sX = 0;
+        const sY = Math.min(bitmap.height, Math.round(inst.sourceY * scaleY));
+        const sW = bitmap.width;
+        const sH = Math.min(bitmap.height - sY, Math.round(inst.sourceHeight * scaleY));
+
+        const dX = 0;
+        const dY = Math.round(inst.destY * scaleY * outputScale);
+        const dW = physicalWidth;
+        const dH = Math.round(inst.destHeight * scaleY * outputScale);
+
+        if (sH > 0 && dH > 0) {
+          ctx.drawImage(bitmap, sX, sY, sW, sH, dX, dY, dW, dH);
+        }
+      } finally {
+        bitmap.close();
+      }
+    }
+
+    // Convert stitched canvas to Blob & DataURL
     const finalBlob = await canvas.convertToBlob({ type: 'image/png' });
-    const reader = new FileReader();
-    const finalDataUrl = await new Promise((resolve) => {
+    const finalDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error('Failed to encode screenshot.'));
       reader.readAsDataURL(finalBlob);
     });
 
@@ -317,18 +414,17 @@ async function performFullPageCapture(tabId) {
       width: physicalWidth,
       height: physicalHeight,
       dpr,
+      downscaled: outputScale < 1,
       title: title || 'Full Page Screenshot',
       type: 'full-page'
     });
 
-    // Notify complete
     chrome.runtime.sendMessage({ action: 'CAPTURE_COMPLETE' }).catch(() => {});
 
-    // Open Preview Studio in new tab
     const previewUrl = chrome.runtime.getURL(`preview/preview.html?id=${captureId}`);
     const previewTab = await chrome.tabs.create({ url: previewUrl });
     if (previewTab && previewTab.id) {
-      previewTabMap.set(previewTab.id, captureId);
+      await registerPreviewTab(previewTab.id, captureId);
     }
 
   } catch (err) {
@@ -342,16 +438,31 @@ async function performFullPageCapture(tabId) {
       }).catch(() => {});
     }
   } finally {
-    // Guaranteed cleanup: restore scroll position, unhide fixed elements, and remove banner
-    await chrome.tabs.sendMessage(tabId, { action: 'RESTORE_PAGE' }).catch(() => {});
+    if (injected) {
+      await chrome.tabs.sendMessage(tabId, { action: 'RESTORE_PAGE' }).catch(() => {});
+    }
+    isCapturing = false;
   }
 }
 
-// 5. Visible viewport capture
+// 6. Visible viewport capture
 async function performVisibleCapture(tabId) {
+  if (isCapturing) {
+    chrome.runtime.sendMessage({
+      action: 'CAPTURE_ERROR',
+      error: 'A capture is already in progress.'
+    }).catch(() => {});
+    return;
+  }
+
+  isCapturing = true;
   try {
-    const dataUrl = await safeCaptureVisibleTab(null);
     const tab = await chrome.tabs.get(tabId);
+    if (!tab || isRestrictedUrl(tab.url)) {
+      throw new Error('Chromium security prevents capturing internal or restricted browser pages.');
+    }
+
+    const dataUrl = await safeCaptureVisibleTab(tab.windowId);
 
     const captureId = `capture_${Date.now()}`;
     await saveScreenshot(captureId, {
@@ -365,7 +476,7 @@ async function performVisibleCapture(tabId) {
     const previewUrl = chrome.runtime.getURL(`preview/preview.html?id=${captureId}`);
     const previewTab = await chrome.tabs.create({ url: previewUrl });
     if (previewTab && previewTab.id) {
-      previewTabMap.set(previewTab.id, captureId);
+      await registerPreviewTab(previewTab.id, captureId);
     }
   } catch (err) {
     console.error('Visible capture failed:', err);
@@ -373,10 +484,12 @@ async function performVisibleCapture(tabId) {
       action: 'CAPTURE_ERROR',
       error: err.message || 'Capture failed'
     }).catch(() => {});
+  } finally {
+    isCapturing = false;
   }
 }
 
-// 6. Message & Command Router
+// 7. Message & Command Router
 chrome.runtime.onMessage.addListener((request, sender) => {
   if (request.action === 'START_FULL_CAPTURE') {
     performFullPageCapture(request.tabId);
@@ -392,7 +505,7 @@ chrome.runtime.onMessage.addListener((request, sender) => {
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'capture-full-page') {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (activeTab && activeTab.id) {
+    if (activeTab && activeTab.id && !isRestrictedUrl(activeTab.url)) {
       performFullPageCapture(activeTab.id);
     }
   }

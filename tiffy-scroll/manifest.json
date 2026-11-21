@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tiffy Scroll - Full Page Screenshot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Capture long scrolling full-page screenshots with interactive crop studio, instant clipboard copy, and high-DPI stitching.",
   "author": "Pakkawat.k (Tiffy App Suite)",
   "permissions": [

@@ -4,35 +4,53 @@ const DB_NAME = 'TiffyCaptureScrollDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'screenshots';
 
-function getScreenshotFromDB(id) {
+function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onsuccess = () => {
-      const db = req.result;
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const getReq = tx.objectStore(STORE_NAME).get(id);
-      getReq.onsuccess = () => resolve(getReq.result);
-      getReq.onerror = () => reject(getReq.error);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
     };
+    req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
 
-function deleteScreenshotFromDB(id) {
-  return new Promise((resolve) => {
-    try {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onsuccess = () => {
-        const db = req.result;
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-      };
-      req.onerror = () => resolve();
-    } catch (e) {
-      resolve();
-    }
+async function getScreenshotFromDB(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const getReq = tx.objectStore(STORE_NAME).get(id);
+    getReq.onsuccess = () => resolve(getReq.result);
+    getReq.onerror = () => reject(getReq.error);
+  });
+}
+
+async function deleteScreenshotFromDB(id) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  } catch (e) {
+    return;
+  }
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error('Failed to create image blob'));
+      }
+    }, 'image/png');
   });
 }
 
@@ -73,7 +91,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cropBox = document.getElementById('crop-box');
 
   const toast = document.getElementById('toast');
+  const toastIcon = document.getElementById('toast-icon');
   const toastMessage = document.getElementById('toast-message');
+  let toastTimer = null;
 
   let originalImage = null;
   let currentCropCoords = null;
@@ -81,11 +101,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   let zoomPercent = 100;
   let pageTitle = 'Screenshot';
 
-  function showToast(msg, duration = 3000) {
+  function showToast(msg, icon = '✅', duration = 3000) {
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+    }
+    if (toastIcon) {
+      toastIcon.textContent = icon;
+    }
     toastMessage.textContent = msg;
     toast.classList.remove('hidden');
-    setTimeout(() => {
+    toastTimer = setTimeout(() => {
       toast.classList.add('hidden');
+      toastTimer = null;
     }, duration);
   }
 
@@ -115,6 +142,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     originalImage = img;
     drawCanvas(img);
     fitToWidth();
+    if (record.downscaled) {
+      showToast('Very tall page was auto-scaled to stay within browser canvas limits.', 'ℹ️', 4500);
+    }
   };
   img.src = record.dataUrl;
 
@@ -130,24 +160,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 3. Zoom Handlers
+  // 3. Zoom Handlers (always based on current mainCanvas dimensions, including after crop)
   function applyZoom(pct) {
+    if (!mainCanvas.width || !mainCanvas.height) return;
+
+    const prevW = imageWrapper.clientWidth;
+    const prevH = imageWrapper.clientHeight;
+
     zoomPercent = Math.max(10, Math.min(300, Math.round(pct)));
     zoomLevelText.textContent = `${zoomPercent}%`;
 
-    const baseWidth = originalImage ? originalImage.width : mainCanvas.width;
-    const targetWidth = Math.round((baseWidth * zoomPercent) / 100);
+    const baseWidth = mainCanvas.width;
+    const targetWidth = Math.max(1, Math.round((baseWidth * zoomPercent) / 100));
+    const targetHeight = Math.max(1, Math.round((mainCanvas.height / mainCanvas.width) * targetWidth));
     imageWrapper.style.width = `${targetWidth}px`;
+
+    if (cropper && cropper.active && prevW > 0 && prevH > 0) {
+      cropper.rescale(prevW, prevH, targetWidth, targetHeight);
+    }
   }
 
   function fitToWidth() {
+    if (!mainCanvas.width) return;
     btnFitWidth.classList.add('active');
     btnActualSize.classList.remove('active');
 
-    const availableWidth = workspace.clientWidth - 80;
-    const baseWidth = originalImage ? originalImage.width : mainCanvas.width;
-    const scale = (availableWidth / baseWidth) * 100;
-    applyZoom(scale);
+    const availableWidth = Math.max(200, workspace.clientWidth - 80);
+    const scale = (availableWidth / mainCanvas.width) * 100;
+    applyZoom(Math.min(100, scale));
   }
 
   function actualSize() {
@@ -174,6 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4. Cropping Engine
   cropper = new CropperEngine(cropOverlay, cropBox, imageWrapper, (coords) => {
     currentCropCoords = coords;
+    if (!imageWrapper.clientWidth || !imageWrapper.clientHeight) return;
     const scaleX = mainCanvas.width / imageWrapper.clientWidth;
     const scaleY = mainCanvas.height / imageWrapper.clientHeight;
     const realW = Math.round(coords.displayWidth * scaleX);
@@ -181,38 +222,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     cropDimsVal.textContent = `${realW} × ${realH} px`;
   });
 
-  btnCropToggle.addEventListener('click', () => {
-    cropActionBar.classList.remove('hidden');
-    cropper.start();
-  });
-
-  btnCancelCrop.addEventListener('click', () => {
-    cropper.stop();
-    cropActionBar.classList.add('hidden');
-  });
-
-  btnApplyCrop.addEventListener('click', () => {
+  function applyActiveCrop() {
     if (!currentCropCoords || currentCropCoords.displayWidth < 10 || currentCropCoords.displayHeight < 10) {
-      alert('Please select a crop area.');
+      showToast('Please select a crop area first.', '⚠️', 3000);
       return;
     }
 
     const scaleX = mainCanvas.width / imageWrapper.clientWidth;
     const scaleY = mainCanvas.height / imageWrapper.clientHeight;
 
-    const cropX = Math.round(currentCropCoords.displayX * scaleX);
-    const cropY = Math.round(currentCropCoords.displayY * scaleY);
-    const cropW = Math.round(currentCropCoords.displayWidth * scaleX);
-    const cropH = Math.round(currentCropCoords.displayHeight * scaleY);
+    const cropX = Math.max(0, Math.round(currentCropCoords.displayX * scaleX));
+    const cropY = Math.max(0, Math.round(currentCropCoords.displayY * scaleY));
+    const cropW = Math.max(1, Math.min(mainCanvas.width - cropX, Math.round(currentCropCoords.displayWidth * scaleX)));
+    const cropH = Math.max(1, Math.min(mainCanvas.height - cropY, Math.round(currentCropCoords.displayHeight * scaleY)));
 
-    // Create temp canvas with cropped slice
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = cropW;
     tempCanvas.height = cropH;
     const tempCtx = tempCanvas.getContext('2d');
     tempCtx.drawImage(mainCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-    // Replace main canvas
     mainCanvas.width = cropW;
     mainCanvas.height = cropH;
     const mainCtx = mainCanvas.getContext('2d');
@@ -222,17 +251,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     cropActionBar.classList.add('hidden');
     btnResetCrop.classList.remove('hidden');
     badgeDims.textContent = `${cropW} × ${cropH} px (Cropped)`;
+    if (badgeFullResolution) {
+      badgeFullResolution.textContent = `${cropW}px`;
+    }
 
     fitToWidth();
-    showToast('✂️ Image cropped successfully!');
+    showToast('Image cropped successfully!', '✂️');
+  }
+
+  function cancelCrop() {
+    cropper.stop();
+    cropActionBar.classList.add('hidden');
+  }
+
+  btnCropToggle.addEventListener('click', () => {
+    cropActionBar.classList.remove('hidden');
+    cropper.start();
   });
+
+  btnCancelCrop.addEventListener('click', cancelCrop);
+  btnApplyCrop.addEventListener('click', applyActiveCrop);
 
   btnResetCrop.addEventListener('click', () => {
     if (originalImage) {
+      if (cropper.active) cancelCrop();
       drawCanvas(originalImage);
       btnResetCrop.classList.add('hidden');
       fitToWidth();
-      showToast('Restored original full screenshot');
+      showToast('Restored original full screenshot', '↩️');
     }
   });
 
@@ -242,16 +288,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       let targetWidth, targetHeight;
 
       if (customWidth) {
-        targetWidth = Math.max(100, Math.round(customWidth));
-        targetHeight = Math.round((mainCanvas.height / mainCanvas.width) * targetWidth);
+        targetWidth = Math.max(50, Math.round(customWidth));
+        targetHeight = Math.max(1, Math.round((mainCanvas.height / mainCanvas.width) * targetWidth));
       } else {
-        targetWidth = Math.round(mainCanvas.width * scaleFactor);
-        targetHeight = Math.round(mainCanvas.height * scaleFactor);
+        targetWidth = Math.max(1, Math.round(mainCanvas.width * scaleFactor));
+        targetHeight = Math.max(1, Math.round(mainCanvas.height * scaleFactor));
       }
 
       let sourceCanvas = mainCanvas;
       if (targetWidth !== mainCanvas.width || targetHeight !== mainCanvas.height) {
-        // High-quality downsampling canvas
         const scaledCanvas = document.createElement('canvas');
         scaledCanvas.width = targetWidth;
         scaledCanvas.height = targetHeight;
@@ -262,24 +307,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         sourceCanvas = scaledCanvas;
       }
 
-      sourceCanvas.toBlob(async (blob) => {
-        if (!blob) {
-          showToast('❌ Failed to create image blob', 3000);
-          return;
-        }
+      const blob = await canvasToPngBlob(sourceCanvas);
 
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
-        ]);
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
 
-        const sizeKb = Math.round(blob.size / 1024);
-        const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
-        const label = scaleFactor === 1.0 && !customWidth ? 'Full Resolution' : `Resized ${targetWidth}px`;
-        showToast(`✅ Copied ${label} (${targetWidth}×${targetHeight}px • ${sizeStr}) to clipboard! Ready to paste (⌘V)`);
-      }, 'image/png');
+      const sizeKb = Math.round(blob.size / 1024);
+      const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+      const label = scaleFactor === 1.0 && !customWidth ? 'Full Resolution' : `Resized ${targetWidth}px`;
+      showToast(`Copied ${label} (${targetWidth}×${targetHeight}px • ${sizeStr})! Ready to paste (⌘V)`, '✅');
     } catch (err) {
       console.error('Clipboard copy failed:', err);
-      showToast('❌ Copy failed: Permission denied by browser', 4000);
+      showToast('Copy failed: Permission denied or tab not focused', '❌', 4000);
     }
   }
 
@@ -337,23 +377,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const input = prompt('Enter target width in pixels (e.g. 1080, 1200, 800):', '1080');
     if (input) {
       const parsedW = parseInt(input, 10);
-      if (!isNaN(parsedW) && parsedW > 50) {
+      if (!isNaN(parsedW) && parsedW >= 50) {
         setActiveMenuItem(e.currentTarget, `Copy (${parsedW}px)`, null, parsedW);
         copyImageToClipboard(null, parsedW);
       } else {
-        alert('Please enter a valid width greater than 50px.');
+        showToast('Please enter a valid width of at least 50px.', '⚠️', 3000);
       }
     }
   });
 
   // 6. Download PNG
-  btnDownloadPng.addEventListener('click', () => {
-    mainCanvas.toBlob((blob) => {
-      if (!blob) return;
+  btnDownloadPng.addEventListener('click', async () => {
+    try {
+      const blob = await canvasToPngBlob(mainCanvas);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
 
-      // Sanitize filename
       const cleanTitle = pageTitle.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 30);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
       a.download = `Capture_${cleanTitle}_${timestamp}.png`;
@@ -363,11 +402,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast('💾 Screenshot downloaded');
-    }, 'image/png');
+      showToast('Screenshot downloaded', '💾');
+    } catch (err) {
+      console.error('Download failed:', err);
+      showToast('Failed to export PNG image', '❌', 3500);
+    }
   });
 
-  // 7. Auto-cleanup: destroy temporary screenshot from IndexedDB when tab is closed
+  // 7. Studio Keyboard Shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!copyMenu.classList.contains('hidden')) {
+        copyMenu.classList.add('hidden');
+      } else if (cropper && cropper.active) {
+        cancelCrop();
+      }
+    } else if (e.key === 'Enter' && cropper && cropper.active) {
+      e.preventDefault();
+      applyActiveCrop();
+    } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c' && !window.getSelection().toString()) {
+      e.preventDefault();
+      copyImageToClipboard(currentCopyScale, currentCustomWidth);
+    }
+  });
+
+  // 8. Auto-cleanup: destroy temporary screenshot from IndexedDB when tab is closed
   window.addEventListener('beforeunload', () => {
     if (captureId) {
       deleteScreenshotFromDB(captureId);
