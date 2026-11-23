@@ -10,6 +10,7 @@
 | Extension | Folder | Target Browsers | Description |
 | :--- | :--- | :--- | :--- |
 | **Tiffy Scroll** | [`tiffy-scroll/`](tiffy-scroll/) | Chrome, Brave, Edge | 📸 Full-page scrolling screenshot tool with interactive crop studio, clipboard copy, and high-DPI canvas stitching. |
+| **Tiffy Geo** | [`tiffy-geo/`](tiffy-geo/) | Chrome, Brave, Edge | 📍 Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live movement controls. |
 
 ---
 

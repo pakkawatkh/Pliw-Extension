@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tiffy Geo</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">📍</div>
+        <div>
+          <h1>Tiffy Geo</h1>
+          <span class="status-pill" id="status-pill">Real Location</span>
+        </div>
+      </div>
+
+      <label class="switch" aria-label="Enable Fake Location">
+        <input type="checkbox" id="toggle-enabled" />
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <!-- Search Bar -->
+    <form class="search-bar" id="search-form">
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search place or paste lat, lng..."
+        autocomplete="off"
+      />
+      <button type="submit" id="search-btn" title="Search">Go</button>
+    </form>
+    <div class="search-feedback" id="search-feedback"></div>
+
+    <!-- Interactive Slippy Map -->
+    <div class="map-container">
+      <div class="map-viewport" id="map-viewport">
+        <div class="map-tiles" id="map-tiles"></div>
+        <div class="map-pin" id="map-pin">
+          <div class="pin-pulse"></div>
+          <div class="pin-head"></div>
+        </div>
+      </div>
+
+      <div class="map-controls">
+        <button type="button" id="zoom-in" title="Zoom In">+</button>
+        <button type="button" id="zoom-out" title="Zoom Out">−</button>
+        <button type="button" id="center-pin" title="Center on Pin">⌖</button>
+      </div>
+      <div class="map-caption" id="map-caption">Click map to pin · Drag to pan</div>
+    </div>
+
+    <!-- Coordinates & Settings -->
+    <section class="coords-grid">
+      <label class="field">
+        <span>Latitude</span>
+        <input type="number" id="lat-input" step="0.000001" min="-90" max="90" />
+      </label>
+      <label class="field">
+        <span>Longitude</span>
+        <input type="number" id="lng-input" step="0.000001" min="-180" max="180" />
+      </label>
+    </section>
+
+    <section class="meta-row">
+      <label class="inline-field">
+        <span>Accuracy</span>
+        <input type="number" id="accuracy-input" min="1" max="5000" value="15" />
+        <span class="unit">m</span>
+      </label>
+
+      <label class="check-field" title="Add realistic ±2–4m GPS micro-drift">
+        <input type="checkbox" id="jitter-toggle" checked />
+        <span>GPS Jitter</span>
+      </label>
+
+      <button type="button" class="save-fav-btn" id="save-fav-btn" title="Save current pin to Favorites">
+        ★ Save
+      </button>
+    </section>
+
+    <!-- Live Nudge Movement -->
+    <section class="nudge-bar">
+      <div class="nudge-left">
+        <span class="section-label">Live Move</span>
+        <select id="nudge-step" aria-label="Movement step">
+          <option value="10">10 m</option>
+          <option value="100" selected>100 m</option>
+          <option value="1000">1 km</option>
+        </select>
+      </div>
+      <div class="nudge-pad">
+        <button type="button" data-dir="N" title="Move North">↑</button>
+        <button type="button" data-dir="S" title="Move South">↓</button>
+        <button type="button" data-dir="W" title="Move West">←</button>
+        <button type="button" data-dir="E" title="Move East">→</button>
+      </div>
+    </section>
+
+    <!-- Presets & Favorites -->
+    <section class="presets-section">
+      <div class="section-label">Quick Locations &amp; Favorites</div>
+      <div class="chips" id="preset-chips"></div>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
