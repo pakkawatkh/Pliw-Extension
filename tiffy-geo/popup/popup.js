@@ -90,7 +90,9 @@
     };
   }
 
-  // --- Render Interactive Tile Map ---
+  // --- Render Interactive Tile Map (Persistent DOM Cache, Zero Flicker) ---
+  const activeTiles = new Map();
+
   function renderMap() {
     const rect = mapViewport.getBoundingClientRect();
     const w = rect.width || 352;
@@ -100,28 +102,46 @@
     const topLeftX = centerPx.x - w / 2;
     const topLeftY = centerPx.y - h / 2;
 
-    const minTileX = Math.floor(topLeftX / 256);
-    const maxTileX = Math.floor((topLeftX + w) / 256);
-    const minTileY = Math.floor(topLeftY / 256);
-    const maxTileY = Math.floor((topLeftY + h) / 256);
+    // 1-tile buffer around viewport for seamless dragging
+    const minTileX = Math.floor(topLeftX / 256) - 1;
+    const maxTileX = Math.floor((topLeftX + w) / 256) + 1;
+    const minTileY = Math.floor(topLeftY / 256) - 1;
+    const maxTileY = Math.floor((topLeftY + h) / 256) + 1;
     const maxTiles = Math.pow(2, zoom);
 
-    const frag = document.createDocumentFragment();
+    const neededKeys = new Set();
+
     for (let tx = minTileX; tx <= maxTileX; tx++) {
       for (let ty = minTileY; ty <= maxTileY; ty++) {
         if (ty < 0 || ty >= maxTiles) continue;
         const wrappedX = ((tx % maxTiles) + maxTiles) % maxTiles;
-        const img = document.createElement("img");
-        img.className = "map-tile";
-        img.src = `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${ty}.png`;
-        img.style.left = `${Math.round(tx * 256 - topLeftX)}px`;
-        img.style.top = `${Math.round(ty * 256 - topLeftY)}px`;
-        img.alt = "";
-        frag.appendChild(img);
+        const key = `${zoom}/${tx}/${ty}`;
+        neededKeys.add(key);
+
+        let img = activeTiles.get(key);
+        if (!img) {
+          img = document.createElement("img");
+          img.className = "map-tile";
+          img.decoding = "async";
+          img.src = `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${ty}.png`;
+          img.alt = "";
+          mapTiles.appendChild(img);
+          activeTiles.set(key, img);
+        }
+
+        const px = Math.round(tx * 256 - topLeftX);
+        const py = Math.round(ty * 256 - topLeftY);
+        img.style.transform = `translate3d(${px}px, ${py}px, 0)`;
       }
     }
-    mapTiles.innerHTML = "";
-    mapTiles.appendChild(frag);
+
+    // Prune tiles outside viewport buffer or from previous zoom level
+    for (const [key, img] of activeTiles.entries()) {
+      if (!neededKeys.has(key)) {
+        img.remove();
+        activeTiles.delete(key);
+      }
+    }
 
     // Position pin
     const pinPx = latLngToWorldPx(config.lat, config.lng, zoom);

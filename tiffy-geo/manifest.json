@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tiffy Geo - Browser Fake Location",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Spoof your browser geolocation with an interactive map picker, place search, favorites, and live movement controls.",
   "author": "Pakkawat.k (Tiffy App Suite)",
   "permissions": [
