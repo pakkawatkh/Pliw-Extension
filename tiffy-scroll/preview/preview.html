@@ -33,65 +33,71 @@
       </div>
 
       <div class="view-btn-group">
-        <button id="btn-fit-width" class="text-btn active" title="Fit to width">Fit Width</button>
-        <button id="btn-actual-size" class="text-btn" title="Actual 100% size">100% Size</button>
+        <button id="btn-fit-width" class="text-btn active" title="Fit to width" data-i18n="fitWidth">Fit Width</button>
+        <button id="btn-actual-size" class="text-btn" title="Actual 100% size" data-i18n="actualSize">100% Size</button>
       </div>
     </div>
 
-    <!-- Right: Primary Actions (Copy, Crop, Download) -->
+    <!-- Right: Primary Actions (Draw, Crop, Copy, Download, Lang) -->
     <div class="header-right">
+      <!-- Annotate / Freehand Draw Trigger -->
+      <button id="btn-annotate-toggle" class="studio-btn btn-secondary" title="Draw &amp; Annotate (D)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span data-i18n="drawBtn">Draw</span>
+      </button>
+
       <!-- Crop Tool Trigger -->
-      <button id="btn-crop-toggle" class="studio-btn btn-secondary">
+      <button id="btn-crop-toggle" class="studio-btn btn-secondary" title="Crop Image">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"></path><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"></path></svg>
-        <span>Crop (ครอบตัด)</span>
+        <span data-i18n="cropBtn">Crop</span>
       </button>
 
       <!-- Reset Crop (hidden initially) -->
       <button id="btn-reset-crop" class="studio-btn btn-secondary hidden" title="Restore original uncropped image">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
-        <span>Reset Original</span>
+        <span data-i18n="resetBtn">Reset</span>
       </button>
 
       <!-- Copy to Clipboard (Split Dropdown: Full / Resized) -->
       <div class="dropdown-wrapper" id="copy-dropdown-wrapper">
         <div class="split-btn-group">
-          <button id="btn-copy-clipboard" class="studio-btn btn-secondary btn-split-main" title="Copy image directly to macOS/Windows clipboard">
+          <button id="btn-copy-clipboard" class="studio-btn btn-secondary btn-split-main" title="Copy image directly to clipboard">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            <span id="btn-copy-label">Copy (คัดลอก)</span>
+            <span id="btn-copy-label">Copy</span>
           </button>
-          <button id="btn-copy-toggle-menu" class="studio-btn btn-secondary btn-split-arrow" title="Choose Copy Size (Full 100% / Resized 50% / Compact 30%)">
+          <button id="btn-copy-toggle-menu" class="studio-btn btn-secondary btn-split-arrow" title="Choose Copy Size">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
         </div>
 
         <!-- Dropdown Menu -->
         <div id="copy-menu" class="dropdown-menu hidden">
-          <div class="dropdown-header">Copy Resolution (เลือกขนาดคัดลอก)</div>
+          <div class="dropdown-header" data-i18n="copyResolutionHeader">Copy Resolution</div>
           <button class="menu-item active" data-scale="1.0" id="opt-copy-full">
             <div class="menu-item-left">
-              <span class="menu-title">📋 100% Full Resolution</span>
-              <span class="menu-desc">Original high-DPI quality</span>
+              <span class="menu-title" data-i18n="copyFullTitle">📋 100% Full Resolution</span>
+              <span class="menu-desc" data-i18n="copyFullDesc">Original high-DPI quality</span>
             </div>
             <span class="menu-badge" id="badge-full-resolution">100%</span>
           </button>
           <button class="menu-item" data-scale="0.5" id="opt-copy-50">
             <div class="menu-item-left">
-              <span class="menu-title">⚡ 50% Optimized Scale</span>
-              <span class="menu-desc">Ideal for Slack, Teams, Jira &amp; Chat</span>
+              <span class="menu-title" data-i18n="copy50Title">⚡ 50% Optimized Scale</span>
+              <span class="menu-desc" data-i18n="copy50Desc">Ideal for Slack, Teams, Jira &amp; Chat</span>
             </div>
             <span class="menu-badge">50%</span>
           </button>
           <button class="menu-item" data-scale="0.3" id="opt-copy-30">
             <div class="menu-item-left">
-              <span class="menu-title">📱 30% Compact Scale</span>
-              <span class="menu-desc">Super lightweight &amp; fast sharing</span>
+              <span class="menu-title" data-i18n="copy30Title">📱 30% Compact Scale</span>
+              <span class="menu-desc" data-i18n="copy30Desc">Super lightweight &amp; fast sharing</span>
             </div>
             <span class="menu-badge">30%</span>
           </button>
           <button class="menu-item" data-scale="custom" id="opt-copy-custom">
             <div class="menu-item-left">
-              <span class="menu-title">⚙️ Custom Width...</span>
-              <span class="menu-desc">Specify exact width (e.g. 1080px, 1200px)</span>
+              <span class="menu-title" data-i18n="copyCustomTitle">⚙️ Custom Width...</span>
+              <span class="menu-desc" data-i18n="copyCustomDesc">Specify exact width (e.g. 1080px, 1200px)</span>
             </div>
             <span class="menu-badge">Custom</span>
           </button>
@@ -101,22 +107,104 @@
       <!-- Download PNG -->
       <button id="btn-download-png" class="studio-btn btn-primary" title="Download PNG file">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        <span>Download PNG</span>
+        <span data-i18n="downloadBtn">Download PNG</span>
       </button>
+
+      <!-- Language Toggle -->
+      <button id="btn-lang-toggle" class="lang-btn" title="Switch Language (TH / EN)">EN</button>
     </div>
   </header>
+
+  <!-- Floating Annotation Toolbar (Visible in Draw/Annotate mode) -->
+  <div id="annotate-toolbar" class="annotate-toolbar hidden">
+    <!-- Drawing Tools -->
+    <div class="tool-group" role="toolbar" aria-label="Drawing tools">
+      <button class="tool-btn active" data-tool="pen" data-i18n-title="toolPen" title="Freehand Pen (1)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      </button>
+      <button class="tool-btn" data-tool="highlighter" data-i18n-title="toolHighlighter" title="Highlighter (2)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"></path><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path></svg>
+      </button>
+      <button class="tool-btn" data-tool="arrow" data-i18n-title="toolArrow" title="Arrow (3)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"></line><polyline points="10 5 19 5 19 14"></polyline></svg>
+      </button>
+      <button class="tool-btn" data-tool="rect" data-i18n-title="toolRect" title="Rectangle (4)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect></svg>
+      </button>
+      <button class="tool-btn" data-tool="ellipse" data-i18n-title="toolEllipse" title="Ellipse (5)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="7"></ellipse></svg>
+      </button>
+      <button class="tool-btn" data-tool="line" data-i18n-title="toolLine" title="Line (6)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="4"></line></svg>
+      </button>
+      <button class="tool-btn" data-tool="text" data-i18n-title="toolText" title="Text (7)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+      </button>
+      <button class="tool-btn" data-tool="blur" data-i18n-title="toolBlur" title="Pixelate / Blur (8)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="6"></rect><rect x="9" y="9" width="6" height="6"></rect><rect x="15" y="15" width="6" height="6"></rect><rect x="15" y="3" width="6" height="6"></rect><rect x="3" y="15" width="6" height="6"></rect></svg>
+      </button>
+      <button class="tool-btn" data-tool="eraser" data-i18n-title="toolEraser" title="Eraser (9)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16c-.6-.6-.6-1.5 0-2.1l10-10c.6-.6 1.5-.6 2.1 0l6.9 6.9c.6.6.6 1.5 0 2.1L15 20"></path><line x1="6" y1="11" x2="13" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Color Palette -->
+    <div class="color-group" aria-label="Colors">
+      <button class="color-swatch active" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
+      <button class="color-swatch" data-color="#f97316" style="background:#f97316" title="Orange"></button>
+      <button class="color-swatch" data-color="#eab308" style="background:#eab308" title="Yellow"></button>
+      <button class="color-swatch" data-color="#22c55e" style="background:#22c55e" title="Green"></button>
+      <button class="color-swatch" data-color="#0284c7" style="background:#0284c7" title="Blue"></button>
+      <button class="color-swatch" data-color="#a855f7" style="background:#a855f7" title="Purple"></button>
+      <button class="color-swatch" data-color="#0f172a" style="background:#0f172a" title="Black"></button>
+      <button class="color-swatch swatch-light" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+      <label class="color-picker-wrap" data-i18n-title="customColor" title="Custom Color">
+        <input type="color" id="input-custom-color" value="#ef4444">
+        <span class="color-picker-ring"></span>
+      </label>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Stroke Width -->
+    <div class="size-group">
+      <span class="size-preview-wrap" title="Stroke Size">
+        <span id="stroke-size-dot" class="size-preview-dot"></span>
+      </span>
+      <input type="range" id="stroke-width-slider" min="2" max="24" value="4" step="1" aria-label="Stroke width">
+      <span id="stroke-width-val" class="size-val">4px</span>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- History & Actions -->
+    <div class="history-group">
+      <button id="btn-undo" class="tool-btn" disabled data-i18n-title="undoTitle" title="Undo (⌘Z)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+      </button>
+      <button id="btn-redo" class="tool-btn" disabled data-i18n-title="redoTitle" title="Redo (⌘⇧Z)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"></polyline><path d="M4 20v-7a4 4 0 0 1 4-4h12"></path></svg>
+      </button>
+      <button id="btn-clear-annotations" class="tool-btn tool-btn-danger" disabled data-i18n-title="clearTitle" title="Clear All Drawings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+      </button>
+      <button id="btn-done-annotate" class="studio-btn btn-primary btn-sm" data-i18n="doneBtn">✓ Done</button>
+    </div>
+  </div>
 
   <!-- Crop Floating Action Bar (Visible only during crop mode) -->
   <div id="crop-action-bar" class="crop-action-bar hidden">
     <div class="crop-info">
-      <span class="crop-lbl">Crop Selection:</span>
+      <span class="crop-lbl" data-i18n="cropSelection">Crop Selection:</span>
       <span id="crop-dims" class="crop-dims-val">0 × 0 px</span>
     </div>
     <div class="crop-btns">
-      <button id="btn-apply-crop" class="studio-btn btn-primary btn-sm">
-        ✓ Apply Crop (ตัดภาพ)
+      <button id="btn-apply-crop" class="studio-btn btn-primary btn-sm" data-i18n="applyCropBtn">
+        ✓ Apply Crop
       </button>
-      <button id="btn-cancel-crop" class="studio-btn btn-secondary btn-sm">
+      <button id="btn-cancel-crop" class="studio-btn btn-secondary btn-sm" data-i18n="cancelBtn">
         ✕ Cancel
       </button>
     </div>
@@ -127,6 +215,7 @@
     <div class="canvas-stage" id="canvas-stage">
       <div class="image-wrapper" id="image-wrapper">
         <canvas id="main-canvas"></canvas>
+        <canvas id="annotation-canvas" class="annotation-canvas"></canvas>
         <!-- Interactive Crop Overlay -->
         <div id="crop-overlay" class="crop-overlay hidden">
           <div id="crop-box" class="crop-box">
@@ -151,6 +240,7 @@
   </div>
 
   <script src="cropper-engine.js"></script>
+  <script src="annotation-engine.js"></script>
   <script src="preview.js"></script>
 </body>
 </html>
