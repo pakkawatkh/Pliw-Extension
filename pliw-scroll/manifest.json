@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pliw Scroll - Full Page Screenshot",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Capture long scrolling full-page screenshots with freehand drawing & annotation studio, interactive crop, instant clipboard copy, and high-DPI stitching.",
   "author": "Pakkawat.k (Pliw App Suite)",
   "permissions": [

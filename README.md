@@ -11,8 +11,8 @@
 
 | Extension | Version | Download | Live Preview & Guide | Description |
 | :--- | :---: | :--- | :--- | :--- |
-| 📸 **Pliw Scroll** (`pliw-scroll/`) | `v1.2.0` | [ZIP (132 KB)](https://pakkawatkh.github.io/Pliw-App/pliw-scroll/pliw-scroll-v1.2.0.zip) | [Website](https://pakkawatkh.github.io/Pliw-App/pliw-scroll/) | Full-page scrolling screenshot with freehand drawing & annotation studio, sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
-| 📍 **Pliw Geo** (`pliw-geo/`) | `v1.1.0` | [ZIP (16 KB)](https://pakkawatkh.github.io/Pliw-App/pliw-geo/pliw-geo-v1.1.0.zip) | [Website](https://pakkawatkh.github.io/Pliw-App/pliw-geo/) | Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live N/S/E/W movement. |
+| 📸 **Pliw Scroll** (`pliw-scroll/`) | `v1.2.1` | [ZIP (132 KB)](https://pakkawatkh.github.io/Pliw-App/pliw-scroll/pliw-scroll-v1.2.1.zip) | [Website](https://pakkawatkh.github.io/Pliw-App/pliw-scroll/) | Full-page scrolling screenshot with freehand drawing & annotation studio, sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
+| 📍 **Pliw Geo** (`pliw-geo/`) | `v1.1.1` | [ZIP (16 KB)](https://pakkawatkh.github.io/Pliw-App/pliw-geo/pliw-geo-v1.1.1.zip) | [Website](https://pakkawatkh.github.io/Pliw-App/pliw-geo/) | Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live N/S/E/W movement. |
 
 ---
 
