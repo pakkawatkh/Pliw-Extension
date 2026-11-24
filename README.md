@@ -1,5 +1,7 @@
 # 🧩 tiffy-extension
 
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
 > Official **Manifest V3** Chromium browser extensions for the **Tiffy** productivity suite — compatible with **Google Chrome**, **Brave Browser**, and **Microsoft Edge**.  
 > 🌐 **Release Portal:** https://pakkawatkh.github.io/tiffy-app/
 
@@ -40,4 +42,6 @@
 
 ---
 
-© 2026 Pakkawat.k. All Rights Reserved.
+## 📄 License
+
+Open Source — Licensed under the **[MIT License](LICENSE)**. Copyright © 2026 Pakkawat.k.
