@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pliw Geo - Browser Fake Location",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Spoof your browser geolocation with an interactive map picker, place search, favorites, and live movement controls.",
   "author": "Pakkawat.k (Pliw App Suite)",
   "permissions": [
