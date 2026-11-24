@@ -8,7 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusCard = document.getElementById('status-card');
   const statusText = document.getElementById('status-text');
   const statusPercent = document.getElementById('status-percent');
+  const statusActions = document.getElementById('status-actions');
   const progressBarFill = document.getElementById('progress-bar-fill');
+  const versionBadge = document.getElementById('version-badge');
+
+  if (versionBadge && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
+    versionBadge.textContent = `v${chrome.runtime.getManifest().version}`;
+  }
 
   const defaultStopButtonHtml = btnStopCapture.innerHTML;
 
@@ -31,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function setInProgress(text, percent) {
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, Math.round(percent))) : 0;
     statusCard.classList.remove('hidden');
+    if (statusActions) statusActions.classList.remove('hidden');
     statusText.textContent = text;
     statusPercent.textContent = `${safePct}%`;
     progressBarFill.style.background = 'linear-gradient(90deg, #38bdf8 0%, #0284c7 100%)';
@@ -43,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resetUI() {
     statusCard.classList.add('hidden');
+    if (statusActions) statusActions.classList.remove('hidden');
     btnCaptureFull.disabled = false;
     btnCaptureVisible.disabled = false;
     btnCaptureFull.style.opacity = '1';
@@ -53,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showError(message) {
     statusCard.classList.remove('hidden');
+    if (statusActions) statusActions.classList.add('hidden');
     statusText.textContent = `Error: ${message}`;
     statusPercent.textContent = '!';
     progressBarFill.style.background = '#ef4444';
