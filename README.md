@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 > Official **Manifest V3** Chromium browser extensions for the **Tiffy** productivity suite — compatible with **Google Chrome**, **Brave Browser**, and **Microsoft Edge**.  
-> 🌐 **Release Portal:** https://pakkawatkh.github.io/tiffy-app/
+> 🌐 **Release Portal:** https://pakkawatkh.github.io/Tiffy-App/
 
 ---
 
@@ -11,8 +11,8 @@
 
 | Extension | Version | Download | Live Preview & Guide | Description |
 | :--- | :---: | :--- | :--- | :--- |
-| 📸 **Tiffy Scroll** (`tiffy-scroll/`) | `v1.0.1` | [ZIP (121 KB)](https://pakkawatkh.github.io/tiffy-app/tiffy-scroll/tiffy-scroll-v1.0.1.zip) | [Website](https://pakkawatkh.github.io/tiffy-app/tiffy-scroll/) | Full-page scrolling screenshot with sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
-| 📍 **Tiffy Geo** (`tiffy-geo/`) | `v1.0.1` | [ZIP (16 KB)](https://pakkawatkh.github.io/tiffy-app/tiffy-geo/tiffy-geo-v1.0.1.zip) | [Website](https://pakkawatkh.github.io/tiffy-app/tiffy-geo/) | Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live N/S/E/W movement. |
+| 📸 **Tiffy Scroll** (`tiffy-scroll/`) | `v1.0.1` | [ZIP (121 KB)](https://pakkawatkh.github.io/Tiffy-App/tiffy-scroll/tiffy-scroll-v1.0.1.zip) | [Website](https://pakkawatkh.github.io/Tiffy-App/tiffy-scroll/) | Full-page scrolling screenshot with sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
+| 📍 **Tiffy Geo** (`tiffy-geo/`) | `v1.0.1` | [ZIP (16 KB)](https://pakkawatkh.github.io/Tiffy-App/tiffy-geo/tiffy-geo-v1.0.1.zip) | [Website](https://pakkawatkh.github.io/Tiffy-App/tiffy-geo/) | Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live N/S/E/W movement. |
 
 ---
 
