@@ -11,7 +11,7 @@
 
 | Extension | Version | Download | Live Preview & Guide | Description |
 | :--- | :---: | :--- | :--- | :--- |
-| 📸 **Tiffy Scroll** (`tiffy-scroll/`) | `v1.1.1` | [ZIP (132 KB)](https://pakkawatkh.github.io/Tiffy-App/tiffy-scroll/tiffy-scroll-v1.1.1.zip) | [Website](https://pakkawatkh.github.io/Tiffy-App/tiffy-scroll/) | Full-page scrolling screenshot with freehand drawing & annotation studio, sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
+| 📸 **Tiffy Scroll** (`tiffy-scroll/`) | `v1.1.2` | [ZIP (132 KB)](https://pakkawatkh.github.io/Tiffy-App/tiffy-scroll/tiffy-scroll-v1.1.2.zip) | [Website](https://pakkawatkh.github.io/Tiffy-App/tiffy-scroll/) | Full-page scrolling screenshot with freehand drawing & annotation studio, sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
 | 📍 **Tiffy Geo** (`tiffy-geo/`) | `v1.0.1` | [ZIP (16 KB)](https://pakkawatkh.github.io/Tiffy-App/tiffy-geo/tiffy-geo-v1.0.1.zip) | [Website](https://pakkawatkh.github.io/Tiffy-App/tiffy-geo/) | Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live N/S/E/W movement. |
 
 ---

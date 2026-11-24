@@ -177,8 +177,9 @@ body {
   gap: 8px;
 }
 
+.hidden,
 .status-card.hidden {
-  display: none;
+  display: none !important;
 }
 
 .status-top {
