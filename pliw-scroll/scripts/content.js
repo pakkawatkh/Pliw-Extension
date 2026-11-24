@@ -2,8 +2,8 @@
 
 (() => {
   // Prevent duplicate injection
-  if (window.__tiffyCaptureScrollInjected) return;
-  window.__tiffyCaptureScrollInjected = true;
+  if (window.__pliwCaptureScrollInjected) return;
+  window.__pliwCaptureScrollInjected = true;
 
   let originalScrollX = 0;
   let originalScrollY = 0;
@@ -14,10 +14,10 @@
   function updateFloatingBanner(step, totalSteps) {
     if (!floatingBanner) {
       floatingBanner = document.createElement('div');
-      floatingBanner.id = 'tiffy-floating-capture-bar';
+      floatingBanner.id = 'pliw-floating-capture-bar';
       floatingBanner.innerHTML = `
         <style>
-          #tiffy-floating-capture-bar {
+          #pliw-floating-capture-bar {
             all: initial;
             position: fixed !important;
             bottom: 24px !important;
@@ -38,7 +38,7 @@
             border: 1px solid rgba(255,255,255,0.18) !important;
             user-select: none !important;
           }
-          #tiffy-floating-capture-bar .tcb-dot {
+          #pliw-floating-capture-bar .tcb-dot {
             width: 8px;
             height: 8px;
             background: #ef4444;
@@ -50,12 +50,12 @@
             50% { transform: scale(1.3); opacity: 1; }
             100% { transform: scale(0.9); opacity: 0.8; }
           }
-          #tiffy-floating-capture-bar .tcb-text {
+          #pliw-floating-capture-bar .tcb-text {
             font-weight: 500;
             color: #f8fafc;
             white-space: nowrap;
           }
-          #tiffy-floating-capture-bar .tcb-btn-stop {
+          #pliw-floating-capture-bar .tcb-btn-stop {
             all: initial;
             background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
             color: #ffffff !important;
@@ -68,10 +68,10 @@
             box-shadow: 0 2px 8px rgba(2,132,199,0.5) !important;
             transition: transform 0.1s !important;
           }
-          #tiffy-floating-capture-bar .tcb-btn-stop:hover {
+          #pliw-floating-capture-bar .tcb-btn-stop:hover {
             transform: scale(1.04) !important;
           }
-          #tiffy-floating-capture-bar .tcb-btn-cancel {
+          #pliw-floating-capture-bar .tcb-btn-cancel {
             all: initial;
             background: transparent !important;
             color: #94a3b8 !important;
@@ -80,7 +80,7 @@
             cursor: pointer !important;
             padding: 3px 6px !important;
           }
-          #tiffy-floating-capture-bar .tcb-btn-cancel:hover {
+          #pliw-floating-capture-bar .tcb-btn-cancel:hover {
             color: #ffffff !important;
           }
         </style>
@@ -136,7 +136,7 @@
   function hideScrollbars() {
     if (scrollbarStyleTag) return;
     scrollbarStyleTag = document.createElement('style');
-    scrollbarStyleTag.id = 'tiffy-hide-scrollbars';
+    scrollbarStyleTag.id = 'pliw-hide-scrollbars';
     scrollbarStyleTag.textContent = `
       ::-webkit-scrollbar { display: none !important; }
       html, body {
@@ -162,8 +162,8 @@
     const all = document.querySelectorAll('*');
 
     for (const el of all) {
-      if (!el || el.id === 'tiffy-floating-capture-bar') continue;
-      if (el.closest && el.closest('#tiffy-floating-capture-bar')) continue;
+      if (!el || el.id === 'pliw-floating-capture-bar') continue;
+      if (el.closest && el.closest('#pliw-floating-capture-bar')) continue;
 
       try {
         const style = window.getComputedStyle(el);
@@ -210,7 +210,7 @@
               pointerEvents: el.style.getPropertyValue('pointer-events'),
               pointerEventsPriority: el.style.getPropertyPriority('pointer-events')
             });
-            el.setAttribute('data-tiffy-hidden', 'true');
+            el.setAttribute('data-pliw-hidden', 'true');
             el.style.setProperty('visibility', 'hidden', 'important');
             el.style.setProperty('opacity', '0', 'important');
             el.style.setProperty('pointer-events', 'none', 'important');
@@ -234,18 +234,18 @@
         restoreStyleProp(el, 'visibility', orig.visibility, orig.visibilityPriority);
         restoreStyleProp(el, 'opacity', orig.opacity, orig.opacityPriority);
         restoreStyleProp(el, 'pointer-events', orig.pointerEvents, orig.pointerEventsPriority);
-        el.removeAttribute('data-tiffy-hidden');
+        el.removeAttribute('data-pliw-hidden');
       } catch (e) {}
     }
     hiddenFixedElementsMap.clear();
 
-    // Safety Net: restore any remaining elements with data-tiffy-hidden
-    document.querySelectorAll('[data-tiffy-hidden]').forEach(el => {
+    // Safety Net: restore any remaining elements with data-pliw-hidden
+    document.querySelectorAll('[data-pliw-hidden]').forEach(el => {
       try {
         el.style.removeProperty('visibility');
         el.style.removeProperty('opacity');
         el.style.removeProperty('pointer-events');
-        el.removeAttribute('data-tiffy-hidden');
+        el.removeAttribute('data-pliw-hidden');
       } catch (e) {}
     });
   }

@@ -1,4 +1,4 @@
-const STORAGE_KEY = "tiffyGeoConfig";
+const STORAGE_KEY = "pliwGeoConfig";
 
 const DEFAULT_CONFIG = {
   enabled: false,

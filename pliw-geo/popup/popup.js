@@ -1,6 +1,6 @@
 (() => {
-  const STORAGE_KEY = "tiffyGeoConfig";
-  const FAVS_KEY = "tiffyGeoFavorites";
+  const STORAGE_KEY = "pliwGeoConfig";
+  const FAVS_KEY = "pliwGeoFavorites";
 
   const BUILTIN_PRESETS = [
     { name: "Bangkok", lat: 13.7563, lng: 100.5018 },

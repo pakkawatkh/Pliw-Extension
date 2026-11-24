@@ -1,7 +1,7 @@
 // scripts/background.js - Service Worker Coordinator & Canvas Stitcher
 
 // 1. IndexedDB storage helper for large stitched screenshots
-const DB_NAME = 'TiffyCaptureScrollDB';
+const DB_NAME = 'PliwCaptureScrollDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'screenshots';
 const PREVIEW_TAB_KEY_PREFIX = 'preview_tab_';
@@ -140,7 +140,7 @@ async function safeCaptureVisibleTab(windowId = null, retries = 4) {
         err.message.includes('quota')
       );
       if (isQuotaError && attempt < retries) {
-        console.warn(`[Tiffy Scroll] Quota hit, backing off (attempt ${attempt + 1}/${retries})...`);
+        console.warn(`[Pliw Scroll] Quota hit, backing off (attempt ${attempt + 1}/${retries})...`);
         await new Promise(resolve => setTimeout(resolve, 800 + (attempt * 300)));
       } else {
         throw err;
@@ -266,7 +266,7 @@ async function performFullPageCapture(tabId) {
         throw new Error('Capture cancelled by user.');
       }
       if (shouldStopEarly) {
-        console.log('[Tiffy Scroll] Stop early requested by user at step', step);
+        console.log('[Pliw Scroll] Stop early requested by user at step', step);
         break;
       }
 

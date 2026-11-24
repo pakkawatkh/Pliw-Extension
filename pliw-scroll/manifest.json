@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Tiffy Scroll - Full Page Screenshot",
-  "version": "1.1.2",
+  "name": "Pliw Scroll - Full Page Screenshot",
+  "version": "1.2.0",
   "description": "Capture long scrolling full-page screenshots with freehand drawing & annotation studio, interactive crop, instant clipboard copy, and high-DPI stitching.",
-  "author": "Pakkawat.k (Tiffy App Suite)",
+  "author": "Pakkawat.k (Pliw App Suite)",
   "permissions": [
     "activeTab",
     "scripting",
@@ -18,7 +18,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Tiffy Scroll"
+    "default_title": "Pliw Scroll"
   },
   "background": {
     "service_worker": "scripts/background.js"

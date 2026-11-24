@@ -1,8 +1,8 @@
 (() => {
-  if (window.__TIFFY_GEO_INJECTED__) return;
-  window.__TIFFY_GEO_INJECTED__ = true;
+  if (window.__PLIW_GEO_INJECTED__) return;
+  window.__PLIW_GEO_INJECTED__ = true;
 
-  const MSG_SOURCE = "TIFFY_GEO_BRIDGE";
+  const MSG_SOURCE = "PLIW_GEO_BRIDGE";
 
   const state = {
     initialized: false,

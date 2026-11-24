@@ -1,9 +1,9 @@
 // preview/preview.js - Interactive Studio Controller
 
-const DB_NAME = 'TiffyCaptureScrollDB';
+const DB_NAME = 'PliwCaptureScrollDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'screenshots';
-const LANG_STORAGE_KEY = 'tiffyScrollLang';
+const LANG_STORAGE_KEY = 'pliwScrollLang';
 
 const I18N = {
   en: {
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     dCtx.fillRect(0, 0, 1280, 900);
     dCtx.fillStyle = '#0f172a';
     dCtx.font = '700 42px -apple-system, sans-serif';
-    dCtx.fillText('Tiffy Scroll Studio — Drawing Preview', 80, 120);
+    dCtx.fillText('Pliw Scroll Studio — Drawing Preview', 80, 120);
     dCtx.fillStyle = '#475569';
     dCtx.font = '400 22px -apple-system, sans-serif';
     dCtx.fillText('Test freehand drawing, arrows, shapes, text, blur, crop & export.', 80, 175);
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     pageTitle = record.title || 'Screenshot';
     badgeTitle.textContent = pageTitle;
-    document.title = `${pageTitle} • Tiffy Scroll Studio`;
+    document.title = `${pageTitle} • Pliw Scroll Studio`;
 
     // 2. Load into image & canvas
     const img = new Image();

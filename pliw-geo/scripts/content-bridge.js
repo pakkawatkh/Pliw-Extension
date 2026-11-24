@@ -1,6 +1,6 @@
 (() => {
-  const MSG_SOURCE = "TIFFY_GEO_BRIDGE";
-  const STORAGE_KEY = "tiffyGeoConfig";
+  const MSG_SOURCE = "PLIW_GEO_BRIDGE";
+  const STORAGE_KEY = "pliwGeoConfig";
 
   const DEFAULT_CONFIG = {
     enabled: false,

@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Tiffy Geo - Browser Fake Location",
-  "version": "1.0.1",
+  "name": "Pliw Geo - Browser Fake Location",
+  "version": "1.1.0",
   "description": "Spoof your browser geolocation with an interactive map picker, place search, favorites, and live movement controls.",
-  "author": "Pakkawat.k (Tiffy App Suite)",
+  "author": "Pakkawat.k (Pliw App Suite)",
   "permissions": [
     "storage",
     "activeTab",
@@ -20,7 +20,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Tiffy Geo"
+    "default_title": "Pliw Geo"
   },
   "background": {
     "service_worker": "scripts/background.js"

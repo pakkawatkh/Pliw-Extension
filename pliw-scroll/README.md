@@ -1,4 +1,4 @@
-# 📸 Tiffy Scroll (Chromium Extension)
+# 📸 Pliw Scroll (Chromium Extension)
 
 > Full-page scrolling screenshot extension for **Google Chrome**, **Brave Browser**, and **Microsoft Edge**.  
 > Features automated scroll stitching, sticky header prevention, and a dedicated **Studio Editor** with an interactive **Crop Tool**, one-click **Clipboard Copy** (`⌘V`), and PNG download.
@@ -40,16 +40,16 @@
 1. Click **Load unpacked** (โหลดส่วนขยายที่คลายการบีบอัดแล้ว).
 2. Select the directory:
    ```text
-   /Users/pakkawat/Documents/my-tools/tiffy-extension/tiffy-scroll
+   /Users/pakkawat/Documents/my-tools/pliw-extension/pliw-scroll
    ```
 3. The extension icon will appear in your browser toolbar!
 
 ### Step 4: Capture & Edit
 1. Open any long web page (e.g. GitHub repository, news article, or documentation).
-2. Click the **Tiffy Scroll** icon (or press shortcut `Command + Shift + S`).
+2. Click the **Pliw Scroll** icon (or press shortcut `Command + Shift + S`).
 3. Click **"Capture Entire Page"**.
 4. The page scrolls automatically, then opens the **Preview Studio** tab where you can Crop, Copy, or Download!
 
 ---
 
-© 2026 Pakkawat.k • Tiffy App Suite
+© 2026 Pakkawat.k • Pliw App Suite
