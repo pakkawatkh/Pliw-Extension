@@ -9,15 +9,15 @@
 - **Repository:** `pliw-extension` — Chromium **Manifest V3** browser extensions (Chrome, Brave, Edge)
 - **Tech Stack:** Vanilla JavaScript (ES6+), HTML5, CSS3, OffscreenCanvas, IndexedDB, Chrome Extensions MV3 APIs
 - **License:** Open Source — MIT License
-- **Release Portal:** `../Pliw-App/` → Live at `https://pakkawatkh.github.io/Pliw-App/`
+- **Release Portal:** `../../` → Live at `https://pakkawatkh.github.io/Pliw-App/`
 
 ### Extensions in This Repo
 1. **`pliw-scroll/` — Pliw Scroll**
    - Full-page scrolling screenshot with sticky-header suppression, delta stitching, 8-handle Crop Studio, and one-click clipboard copy.
-   - Portal: `../Pliw-App/pliw-scroll/` (`https://pakkawatkh.github.io/Pliw-App/pliw-scroll/`)
+   - Portal: `../../pliw-scroll/` (`https://pakkawatkh.github.io/Pliw-App/pliw-scroll/`)
 2. **`pliw-geo/` — Pliw Geo**
    - Browser GPS geolocation simulator (Manifest V3 MAIN world injection) with interactive map picker, search, favorites, GPS jitter, and live N/S/E/W controls.
-   - Portal: `../Pliw-App/pliw-geo/` (`https://pakkawatkh.github.io/Pliw-App/pliw-geo/`)
+   - Portal: `../../pliw-geo/` (`https://pakkawatkh.github.io/Pliw-App/pliw-geo/`)
 
 ---
 
@@ -35,16 +35,16 @@
 Never stop after editing extension code. Complete every step below in one pass:
 
 1. **Bump `"version"`** in `<ext-name>/manifest.json` (e.g., `pliw-scroll/manifest.json` or `pliw-geo/manifest.json`).
-2. **Package the `.zip` archive** directly into `../Pliw-App/<ext-name>/`:
+2. **Package the `.zip` archive** directly into `../../<ext-name>/`:
    ```bash
-   zip -r ../Pliw-App/<ext-name>/<ext-name>-vX.Y.Z.zip <ext-name> -x "*.DS_Store" "*__MACOSX*"
+   zip -r ../../<ext-name>/<ext-name>-vX.Y.Z.zip <ext-name> -x "*.DS_Store" "*__MACOSX*"
    ```
-   Remove the previous version `.zip` in `../Pliw-App/<ext-name>/` if superseded.
-3. **Update Release Portal (`../Pliw-App`):**
-   - Update version, download filename, and exact ZIP size (KB) in `../Pliw-App/index.html`, `../Pliw-App/<ext-name>/index.html`, `../Pliw-App/README.md`, and `./README.md`.
-   - Follow `../Pliw-App/AGENTS.md` (100% English, minimal copy, no keyboard shortcuts in descriptions).
+   Remove the previous version `.zip` in `../../<ext-name>/` if superseded.
+3. **Update Release Portal (`../..`):**
+   - Update version, download filename, and exact ZIP size (KB) in `../../index.html`, `../../<ext-name>/index.html`, `../../README.md`, and `./README.md`.
+   - Follow `../../AGENTS.md` (100% English, minimal copy, no keyboard shortcuts in descriptions).
 4. **Commit & push both repositories:**
    ```bash
    git add -A && git commit -m "chore(<ext-name>): release vX.Y.Z - <summary>" && git push origin main
-   cd ../Pliw-App && git add -A && git commit -m "chore(release): <Ext Name> vX.Y.Z" && git push origin main
+   cd ../.. && git add -A && git commit -m "chore(release): <Ext Name> vX.Y.Z" && git push origin main
    ```
