@@ -12,14 +12,17 @@ if [ -z "${VERSION}" ]; then
   exit 1
 fi
 
-PLIW_OUT_DIR="$(cd "${REPO_DIR}/.." && pwd)/public/pliw-scroll"
+PORTAL_REPO_DIR="$(cd "${REPO_DIR}/.." && pwd)/public"
+if [ ! -d "${PORTAL_REPO_DIR}" ]; then
+  echo "❌ Portal repository not found: ${PORTAL_REPO_DIR}"
+  exit 1
+fi
+
+PLIW_OUT_DIR="${PORTAL_REPO_DIR}/public/pliw-scroll"
 ZIP_NAME="pliw-scroll-v${VERSION}.zip"
 ZIP_PATH="${PLIW_OUT_DIR}/${ZIP_NAME}"
 
-if [ ! -d "${PLIW_OUT_DIR}" ]; then
-  echo "❌ Target directory not found: ${PLIW_OUT_DIR}"
-  exit 1
-fi
+mkdir -p "${PLIW_OUT_DIR}/assets"
 
 echo "🗜️ Packaging pliw-scroll v${VERSION}..."
 rm -f "${PLIW_OUT_DIR}"/pliw-scroll-v*.zip
@@ -32,7 +35,6 @@ rm -f "${PLIW_OUT_DIR}"/pliw-scroll-v*.zip
 )
 
 echo "🎨 Syncing extension icons to ${PLIW_OUT_DIR}/assets..."
-mkdir -p "${PLIW_OUT_DIR}/assets"
 cp -f "${EXT_DIR}/icons"/icon*.png "${PLIW_OUT_DIR}/assets/"
 
 echo "✅ Packaged: ${ZIP_PATH}"
