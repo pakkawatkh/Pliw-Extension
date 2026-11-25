@@ -12,7 +12,7 @@ if [ -z "${VERSION}" ]; then
   exit 1
 fi
 
-PLIW_OUT_DIR="$(cd "${REPO_DIR}/.." && pwd)/pliw-app/pliw-scroll"
+PLIW_OUT_DIR="$(cd "${REPO_DIR}/.." && pwd)/public/pliw-scroll"
 ZIP_NAME="pliw-scroll-v${VERSION}.zip"
 ZIP_PATH="${PLIW_OUT_DIR}/${ZIP_NAME}"
 

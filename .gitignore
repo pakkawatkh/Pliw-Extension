@@ -10,4 +10,5 @@ dist/
 
 # Screenshots & Local Test artifacts
 *.tmp
+*.zip
 test-output/
