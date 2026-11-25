@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 > Official **Manifest V3** Chromium browser extensions for the **Pliw** productivity suite — compatible with **Google Chrome**, **Brave Browser**, and **Microsoft Edge**.  
-> 🌐 **Release Portal:** https://pakkawatkh.github.io/pliw-public/
+> 🌐 **Release Portal:** https://pakkawatkh.github.io/public/
 
 ---
 
@@ -11,8 +11,8 @@
 
 | Extension | Version | Download | Live Preview & Guide | Description |
 | :--- | :---: | :--- | :--- | :--- |
-| 📸 **Pliw Scroll** (`pliw-scroll/`) | `v1.2.2` | [ZIP (61 KB)](https://pakkawatkh.github.io/pliw-public/pliw-scroll/pliw-scroll-v1.2.2.zip) | [Website](https://pakkawatkh.github.io/pliw-public/pliw-scroll/) | Full-page scrolling screenshot with freehand drawing & annotation studio, sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
-| 📍 **Pliw Geo** (`pliw-geo/`) | `v1.1.2` | [ZIP (32 KB)](https://pakkawatkh.github.io/pliw-public/pliw-geo/pliw-geo-v1.1.2.zip) | [Website](https://pakkawatkh.github.io/pliw-public/pliw-geo/) | Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live N/S/E/W movement. |
+| 📸 **Pliw Scroll** (`pliw-scroll/`) | `v1.2.2` | [ZIP (61 KB)](https://pakkawatkh.github.io/public/pliw-scroll/pliw-scroll-v1.2.2.zip) | [Website](https://pakkawatkh.github.io/public/pliw-scroll/) | Full-page scrolling screenshot with freehand drawing & annotation studio, sticky-header protection, 8-handle Crop Studio, and one-click `⌘V` copy. |
+| 📍 **Pliw Geo** (`pliw-geo/`) | `v1.1.2` | [ZIP (32 KB)](https://pakkawatkh.github.io/public/pliw-geo/pliw-geo-v1.1.2.zip) | [Website](https://pakkawatkh.github.io/public/pliw-geo/) | Browser geolocation spoofer with interactive map picker, place search, favorites, GPS jitter, and live N/S/E/W movement. |
 
 ---
 
